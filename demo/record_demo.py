@@ -11,47 +11,52 @@ from playwright.sync_api import sync_playwright
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RAW = os.path.join(HERE, "raw"); os.makedirs(RAW, exist_ok=True)
-NARR = os.path.join(RAW, "narr_v2"); os.makedirs(NARR, exist_ok=True)
+NARR = os.path.join(RAW, "narr_v4"); os.makedirs(NARR, exist_ok=True)
 BASE = "http://127.0.0.1:8765/"
 W, H = 1600, 900
 DPR = 1.0                       # Playwright records the viewport at 1x (a larger size only adds grey padding)
 VOICE = "Puck"
-STYLE = "Read this like an energetic, confident product-launch narrator, at a brisk pace: "
+# No style instruction in the TTS text: the speech model can read an instruction aloud ("Read this
+# like an energetic narrator…"). The upbeat tone comes from the voice itself. Clips are checked below.
+STYLE = ""
 
 # ------------------------------------------------------------------------------------- script
 # (key, caption title, caption subtitle, narration)
 SCENES = [
     ("intro", "", "",
-     "Eight hundred sixty two thousand versions of Wikipedia. One AI agent that has read every single one. This is WikiPilot."),
-    ("home", "Main page", "Every box is SQL over 20 years of edits",
-     "Its main page is written by SQL over twenty years of edits: did you know, on this day in Wikipedia's history, and the edit wars."),
-    ("ask", "Ask Wikipedia — then vs now", "Time-travel RAG on MariaDB system-versioned tables",
-     "Ask about the past. WikiPilot reads the time in your question, and searches Wikipedia as it stood in 2008, and as it stands today."),
-    ("ask2", "Every claim is cited", "Exact versions · lifespans · hover previews",
-     "Every claim cites the exact version. In 2008, the article blamed the prison camp deaths on a calculated punitive mentality. Today, that framing is gone."),
-    ("hood", "Under the hood", "Vector index + FOR SYSTEM_TIME AS OF + full-text, one statement",
-     "Under the hood, it's one MariaDB statement: a vector index on a system-versioned table, queried as of any date. In milliseconds."),
-    ("voice", "Ask by voice", "Gemini transcribes any language, then traces the drift",
-     "Or just ask out loud, in any language. Gemini traces how the story drifted across two decades."),
-    ("machine", "Time machine", "Any article, on any day since 2003",
-     "The time machine opens any article, on any day since 2003. Press play, and watch history rewrite itself."),
-    ("blame", "Who wrote this?", "Text age · sentence blame in one query",
-     "Text age shows what's settled and what's fresh. Click any sentence: who wrote it, when, and every time it was fought over."),
-    ("translate", "Your language", "Gemini translates any version",
-     "Read Finnish Wikipedia's past, in your own language."),
-    ("history", "Real edit history", "Wikipedia's own two-column diff",
-     "This is the real history: a vandal's joke, reverted in fifty eight seconds."),
-    ("war", "NEW · Edit wars, explained", "Hero or villain? Gemini reads both sides of the fight",
-     "And this is new: edit wars, explained. Gemini reads both sides of the fight over Ilkka Kanerva's text message scandal. "
-     "One side softened it. The other called him out. Mixed, versus villain. And WikiPilot shows who won, and which version is neutral."),
-    ("studio", "Editor studio", "Neutrality check against Wikipedia's NPOV policy",
-     "For editors, the studio checks any paragraph against Wikipedia's neutrality policy, and drafts the fix as a diff."),
-    ("illustrate", "Illustrate & edit", "Gemini image generation · labelled AI-generated",
-     "It illustrates sections, then edits the picture in plain words. Always labelled as AI generated."),
-    ("lens", "Language lens", "Finnish · Swedish · English, side by side",
-     "And it compares Finnish, Swedish and English Wikipedia, side by side."),
+     "Every Wikipedia article has been rewritten hundreds of times, and every old version is still saved. "
+     "WikiPilot is an AI that has read all of them. Eight hundred sixty two thousand versions."),
+    ("home", "The front page", "Surprising facts from 20 years of edits",
+     "The front page is full of surprises from that history: what happened on this day, and where editors argued the most."),
+    ("ask", "Ask about the past", "Wikipedia then, and Wikipedia now",
+     "Ask a question about the past. Here: what did Wikipedia say about the 1918 prison camps in 2008, and what has changed since? "
+     "WikiPilot reads both versions for you."),
+    ("ask2", "Every claim has a source", "Each sentence links to the exact old version",
+     "Every sentence links to its source. In 2008, the article blamed the deaths on deliberate punishment. Today, that wording is gone."),
+    ("hood", "How it works", "A database that remembers every version",
+     "Behind the scenes, a MariaDB database keeps every old version, so one quick search can see Wikipedia exactly as it was on any date."),
+    ("voice", "Ask out loud", "Any language · how the story changed over the years",
+     "You can also just ask out loud, in any language. Here it shows how the story of who started the Winter War changed over twenty years."),
+    ("machine", "Time machine", "Open any article, on any day since 2003",
+     "The time machine opens any article on any day since 2003. Press play, and watch it change over the years."),
+    ("blame", "Who wrote this?", "Fresh text glows · click a sentence for its story",
+     "Yellow shows fresh text. White text has stayed the same for years. Click any sentence to see who wrote it, and how often people fought over it."),
+    ("translate", "In your language", "Read the past in English, or 11 other languages",
+     "And you can read it all in your own language."),
+    ("history", "A real moment", "A joke added, removed 58 seconds later",
+     "Here's a real moment: someone slipped a joke into the Winter War article. It was removed fifty eight seconds later."),
+    ("war", "NEW · Edit wars, explained", "What were they fighting about? Who came out the hero, or the villain?",
+     "New: edit wars, explained. When editors keep undoing each other, WikiPilot shows what they were fighting about. "
+     "In 2008, one side softened a politician's text message scandal. The other side made him the villain. "
+     "It shows who won, and which version was fairer."),
+    ("studio", "For Wikipedia editors", "Spots loaded wording, suggests a neutral rewrite",
+     "For the people who write Wikipedia, the editor studio spots unfair or loaded wording, and suggests a neutral rewrite."),
+    ("illustrate", "Pictures on demand", "Draw it, then change it in plain words",
+     "It can also draw a picture for an article, and change it when you describe what you want. Always labelled as made by AI."),
+    ("lens", "Three languages, three stories", "Finnish · Swedish · English, side by side",
+     "Finally, it compares how Finnish, Swedish and English Wikipedia tell the same story."),
     ("outro", "", "",
-     "MariaDB system-versioned tables, vector search, and the S3 engine. Five Gemini models. WikiPilot: Wikipedia, read through time."),
+     "WikiPilot. Wikipedia, read through time. Built with MariaDB and Google Gemini."),
 ]
 CHAPTERS = [s[0] for s in SCENES if s[1]]
 VOICE_Q = "How has the story of who started the Winter War changed over the years?"
@@ -63,7 +68,11 @@ def tts(text, path, style=True):
         r.raise_for_status()
         open(path, "wb").write(r.content)
     with wave.open(path) as w:
-        return w.getnframes() / w.getframerate()
+        d = w.getnframes() / w.getframerate()
+    rate = len(text.split()) / d
+    if rate < 1.5:      # far slower than speech: extra words were spoken (e.g. an instruction read aloud)
+        raise SystemExit(f"narration check failed for {os.path.basename(path)}: {rate:.1f} words/s; delete it and retry")
+    return d
 
 
 print("narration: generating with Gemini TTS…", flush=True)
@@ -133,7 +142,7 @@ OVERLAY = r"""
     const c = document.getElementById('wp-card'); if (!c) return;
     if (!kind) { c.classList.remove('on'); return; }
     if (kind === 'intro') c.innerHTML = '<div class="glow"></div>' + LOGO + '<div class="name">WikiPilot</div><div class="tag">Wikipedia, read through time</div>' +
-      '<div class="count"><span id="wp-num">0</span><small>versions of Wikipedia · one AI agent</small></div>';
+      '<div class="count"><span id="wp-num">0</span><small>saved versions of Wikipedia · one AI read them all</small></div>';
     else c.innerHTML = '<div class="glow"></div>' + LOGO + '<div class="name">WikiPilot</div><div class="tag">Wikipedia, read through time</div>' +
       '<div class="stack"><span>MariaDB system-versioned tables</span><span>Vector search</span><span>S3 engine</span><span>5 Gemini models</span></div>' +
       '<div class="url">github.com/PrahasHegde/wiki_pilot_junction_2026</div>';
