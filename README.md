@@ -26,6 +26,23 @@ It covers **both tracks, built as one system**. All of it runs on MariaDB featur
 | **Edit-war radar** | Window functions over the full history (`sha1` revert detection, `LAG(user)`) | Where knowledge is contested: named editors undoing each other vs vandalism cleanup |
 | **Cold history in object storage** | **MariaDB S3 storage engine**: `ALTER TABLE … ENGINE=S3` on an S3-compatible bucket (IronShard) | The full text of every version (12.2 GB of wikitext) stays queryable with SQL, without local disk |
 | **Language lens** | The dataset's bge-m3 vectors in a second vector index, cross-language | Same topic in fi / sv / en: differing facts, omissions and framing (NPOV), with suggestions for editors |
+| **Voice, translation, editor studio** | Gemini 3.5 / 3.8 Flash, Flash TTS, Flash Image over article versions read `FOR SYSTEM_TIME AS OF` | Ask by voice, listen to answers, read any version in 12 languages, fix NPOV and citations, illustrate and edit images |
+
+## Gemini inside WikiPilot
+
+Five Gemini models, ten jobs. Each one is where a reader or an editor needs it:
+
+| Model | What it does in WikiPilot |
+|---|---|
+| **Gemini Embedding 2** (768-d) | Embeds 288,642 passages through time, and every question, for the vector index on the system-versioned table |
+| **Gemini 3.5 Flash** | Reads the question for time ("in 2008", "what changed since", "over the years") · **voice input**: transcribes a spoken question in any language · **translates** any article version paragraph by paragraph · tells a sentence's life story in blame · writes historically careful image prompts |
+| **Gemini 3.8 Flash** | Grounded, cited answers (then vs now, drift timeline) · compares fi/sv/en Wikipedia (NPOV) · **editor studio**: checks a paragraph for neutrality, citations needed, clarity and length, and drafts the fix as a Wikipedia-style diff |
+| **Gemini 3.8 Flash TTS** | **Listen**: reads answers and articles aloud |
+| **Gemini 3.1 Flash Image** | **Illustrate**: paints an illustration of a section, then **edits it from plain-language instructions** (or edits an uploaded image), labelled AI-generated with Wikimedia Commons guidance |
+
+- **Voice → time travel:** say *"What did Wikipedia say about Kekkonen in 2006?"* in Finnish, English or Swedish. Gemini transcribes it, plans it as an *as of 2006* question, and answers from 2006's Wikipedia. Then **Listen**.
+- **Read the past in your language:** the time machine translates any version on any date into 12 languages, keeping the paragraph structure. Hovering shows the Finnish original. Translations are cached per version.
+- **Editor studio** (its own page in the main menu, or from any article in the time machine): pick a paragraph, then choose **Neutrality (NPOV)**, **Citations needed** (inserts `{{lähde?}}`), **Clarity** or **Shorten**. Gemini quotes the problem words, explains them, and proposes Finnish wikitext shown as a diff, with an English rendering and *Copy wikitext*. **Illustrate** offers five styles (watercolour, historical map, diagram, ink drawing, period poster), an editable prompt, iterative image edits, uploads and downloads.
 
 ## What we found
 
@@ -66,6 +83,9 @@ It covers **both tracks, built as one system**. All of it runs on MariaDB featur
 
 ## Run it
 
+The full architecture, API, data pipeline, troubleshooting and the demo-video plan are in **[DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)**.
+
+
 Needs Docker, Python 3.11+, a Gemini API key, and optionally an S3-compatible bucket.
 
 ```bash
@@ -90,7 +110,7 @@ Docker's disk image on Windows only grows. `scripts/compact_docker_disk.ps1`, ru
 Administrator, gives the unused space back.
 `python scripts/ask_cli.py "question" [YYYY-MM-DD]` asks from the terminal.
 
-Deep links for demos: `#machine/1256/2010-01-01` · `#lens/1256` · `#ask/<question>/<date>` · `#radar` · `#how`
+Deep links for demos: `#machine/1256/2010-01-01` · `#lens/1256` · `#ask/<question>/<date>` · `#studio/1256` · `#radar`
 
 ## The key SQL
 
@@ -131,7 +151,7 @@ Every view in the app has an **Under the hood** panel showing the exact SQL it r
  analyze ──► version_stat (window functions over FOR SYSTEM_TIME ALL)
 
  main.py (FastAPI, SSE) ── Gemini 3.8 Flash (answers, drift, lens) · 3.5 Flash (planning, blame story)
- frontend/ (React + Vite, Framer Motion, Lucide): Main Page · Ask · Time machine · Edit wars · Language lens · How it works · ⌘K palette
+ frontend/ (React + Vite, Framer Motion, Lucide): Main Page · Ask · Time machine · Editor studio · Edit wars · Language lens · ⌘K palette
 ```
 
 ## Choices, and why

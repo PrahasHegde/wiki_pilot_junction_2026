@@ -79,11 +79,13 @@ def _public(s, n, era=None):
             "distance": s.get("distance"), "keyword_rank": s.get("kw_rank")}
 
 
-def run(question, ui_date=None):
-    """Generator of (event, data) for the SSE stream."""
+def run(question, ui_date=None, language=None):
+    """Generator of (event, data) for the SSE stream. `language` overrides the answer language."""
     tr = db.Trace()
     t = time.perf_counter()
     p = plan(question, ui_date)
+    if language:
+        p["language"] = language
     tr.add(f"plan with {gemini.GEMINI_FAST_MODEL}", (time.perf_counter() - t) * 1000,
            json.dumps(p, ensure_ascii=False))
     yield "plan", p

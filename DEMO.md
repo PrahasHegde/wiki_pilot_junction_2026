@@ -45,6 +45,11 @@ Click a source's **time machine →** (or open *Talvisota*).
   cleanup, not an edit war, because the undone edit was anonymous.
 - **Compare**: a word-level diff between any two dates (e.g. "−1 year").
 
+## 1:50 — Gemini, for readers and editors (40 seconds)
+- **Voice:** click the 🎙 in the search box and ask *"What did Wikipedia say about the Winter War in 2008?"* Gemini transcribes it, plans it as *as of 2008*, and answers. Then click **Listen to the answer**.
+- **Translate:** in the time machine, pick **English** from the language menu. The 2010 version reads in English, and hovering a paragraph shows the Finnish.
+- **Editor studio** (sidebar → *Editor studio* → *Talvisota*): click the second paragraph, then **Neutrality (NPOV)**. Gemini flags *"painosti"* ("pressured"), suggests the neutral *"vaati"*, and shows a diff. Then **Illustrate → Generate**, and type *"turn it into a snowy night scene"*: the image is edited in place, labelled AI-generated.
+
 ## 2:00 — Edit wars
 **Edit wars** tab: 862k versions analysed with window functions. The most contested articles, the
 heat map by year, and the fiercest edit wars by month. Click one to jump to that month.
@@ -54,7 +59,7 @@ heat map by year, and the fiercest edit wars by month. Click one to jump to that
 article gives the Swedish volunteers and *krigsbarn* far more room, and a Soviet border provocation
 at Pummanki appears only in Swedish. Suggestions for editors are listed below.
 
-## 2:40 — How it works / scale
+## 2:40 — Under the hood / scale (open any “Under the hood” panel)
 - 862,076 versions with real edit times in a **system-versioned table**
   (`system_versioning_insert_history`).
 - Passages through time: a **vector index on a system-versioned table**.

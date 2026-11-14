@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { BookOpen, ChevronRight, Clock, Command, Database, Globe2, History, Home, Info, Languages, Menu, MessageCircleQuestion, Moon, Pause, Play, Scale, Search, Sparkles, Sun, Swords, TrendingUp } from "lucide-react";
+import { BookOpen, ChevronRight, Clock, Command, Database, Globe2, History, Home, Languages, Menu, MessageCircleQuestion, Moon, Pause, Play, Scale, Search, Sparkles, Sun, Swords, TrendingUp, Wand2 } from "lucide-react";
 import { useApp } from "../store";
+import { MicButton } from "./voice";
 import { END, START, YEAR_MS, api, fmtDate, fmtShort, looksLikeQuestion, monthTime, nf, utc, xOf } from "../lib";
 
 export const Logo = () => (
@@ -55,6 +56,8 @@ export function SearchBox({ placeholder, onPage, onAsk, autoFocus, className = "
       <input value={q} autoFocus={autoFocus} placeholder={placeholder} aria-label={placeholder}
         onChange={(e) => { setQ(e.target.value); setSel(-1); setOpen(true); }} onKeyDown={key}
         onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 150)} />
+      <MicButton size={big ? 19 : 17} title={onAsk ? "Ask by voice, in any language (Gemini)" : "Say an article name (Gemini)"}
+        onText={(text) => { if (onAsk) { setQ(""); onAsk(text); } else { setQ(text); setOpen(true); } }} />
       {className === "search" && <kbd className="kbd">⌘K</kbd>}
       <AnimatePresence>
         {open && (rows.length > 0 || canAsk) && (
@@ -155,7 +158,7 @@ export function TimeBar({ playFrom }) {
 }
 
 const NAV = [["home", "Main page", Home], ["ask", "Ask Wikipedia", MessageCircleQuestion], ["machine", "Time machine", History],
-  ["radar", "Edit wars", Swords], ["lens", "Language lens", Languages], ["how", "How it works", Info]];
+  ["studio", "Editor studio", Wand2], ["radar", "Edit wars", Swords], ["lens", "Language lens", Languages]];
 const TRY_ICONS = [Scale, TrendingUp, Clock, Globe2];
 
 // Compact figures for the stat tiles: 862,076 -> 862k

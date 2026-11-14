@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ExternalLink, Flame, GitCompare, History, BookOpen, Globe2, Quote, Undo2 } from "lucide-react";
+import { ExternalLink, Flame, GitCompare, History, BookOpen, Globe2, Quote, Undo2, Wand2, Languages } from "lucide-react";
+import { ListenButton } from "../components/voice";
+import { LANG_OPTS } from "./Ask";
 import { useApp } from "../store";
 import { DIFF, END, START, WIKI, YEAR_MS, api, fmtDate, fmtShort, fmtTime, isoDay, monthTime, nf, splitSentences, utc, wtx, xOf } from "../lib";
 import { Globe, Hood, Skeleton, Spark, Spinner, tierLabel } from "../components/ui";
@@ -22,6 +24,8 @@ export default function Machine({ onPlayFrom }) {
   const [diffPair, setDiffPair] = useState(null); // explicit (a, b) from history "prev"/"cur"
   const [showAge, setShowAge] = useState(() => new URLSearchParams(location.search).has("age"));
   const [ages, setAges] = useState(null);
+  const [trLang, setTrLang] = useState(() => { try { return localStorage.getItem("readLang") || ""; } catch { return ""; } });
+  const [trans, setTrans] = useState(null);   // {lang, blocks} | {loading}
   const req = useRef(0);
   const atDay = at ? isoDay(at) : "2026-10-01";
 
@@ -61,6 +65,16 @@ export default function Machine({ onPlayFrom }) {
     return () => { live = false; };
   }, [showAge, id, view, atDay]);
 
+  // translation of the version being read
+  useEffect(() => { try { localStorage.setItem("readLang", trLang); } catch {} }, [trLang]);
+  useEffect(() => {
+    if (!trLang || !id || !view || view.kind !== "article" || view.error) { setTrans(null); return; }
+    let live = true;
+    setTrans({ loading: true, lang: trLang });
+    api(`/api/translate/${id}?at=${atDay}&lang=${trLang}`).then((r) => { if (live) { setTrans(r); setTrace((t) => [...t, ...(r.trace || [])]); } });
+    return () => { live = false; };
+  }, [trLang, id, view, atDay]);
+
   const setMode = (m) => { setDiffPair(null); go(`machine/${id}/${at ? isoDay(at) : "today"}${m !== "read" ? "/" + m : ""}`); };
 
   const doBlame = async (sentence, key) => {
@@ -78,7 +92,7 @@ export default function Machine({ onPlayFrom }) {
     <div>
       <div className="tabs">
         <div className="tabs-l"><a className={"tab" + (mode !== "history" ? " sel" : "")} href={`#machine/${id}`}>Article</a><a className="tab" href={`#lens/${id}`}><Globe2 size={13} /> Language lens</a></div>
-        <div className="tabs-r">{tabs.map(([k, l, Icon]) => <button key={k} className={"tab" + (mode === k ? " sel" : "")} onClick={() => setMode(k)}><Icon size={13} /> {l}</button>)}</div>
+        <div className="tabs-r">{tabs.map(([k, l, Icon]) => <button key={k} className={"tab" + (mode === k ? " sel" : "")} onClick={() => setMode(k)}><Icon size={13} /> {l}</button>)}<a className="tab" href={`#studio/${id}`}><Wand2 size={13} /> Editor studio</a></div>
       </div>
       <h1 className="firstHeading">{page ? page.title : <span className="skel-line skel-title" style={{ display: "inline-block", width: 240 }} />}</h1>
       <div className="siteSub">From Wikipedia, the free encyclopedia · <b>as it stood on {at ? fmtDate(at) : "1 October 2026 (latest)"}</b></div>
@@ -102,7 +116,7 @@ export default function Machine({ onPlayFrom }) {
           {mode === "history" ? <HistoryList tl={tl} at={at} onDiff={(a, b) => { setDiffPair([a, b || "2026-10-01"]); go(`machine/${id}/${at ? isoDay(at) : "today"}/compare`); setTimeout(() => setDiffPair([a, b || "2026-10-01"]), 0); }} onRead={(ts) => { setAt(utc(ts) + 1000); setMode("read"); }} />
             : !view ? <><Spinner label={`Travelling to ${at ? fmtDate(at) : "the latest version"}${page && !page.deep ? " (full text from the S3 cold tier)" : ""}…`} /><Skeleton lines={12} /></>
             : view.kind === "diff" ? <DiffView d={view} />
-            : <ArticleView v={view} page={page} at={at} picked={picked} onBlame={doBlame} showAge={showAge} setShowAge={setShowAge} ages={ages} setAt={setAt} />}
+            : <ArticleView v={view} page={page} at={at} picked={picked} onBlame={doBlame} showAge={showAge} setShowAge={setShowAge} ages={ages} setAt={setAt} trLang={trLang} setTrLang={setTrLang} trans={trans} />}
         </article>
         <aside className="rail">
           {page && <Infobox page={page} months={tl?.months} />}
@@ -158,12 +172,14 @@ function TimelineChart({ months, at, onPick }) {
   );
 }
 
-function ArticleView({ v, page, at, picked, onBlame, showAge, setShowAge, ages, setAt }) {
+function ArticleView({ v, page, at, picked, onBlame, showAge, setShowAge, ages, setAt, trLang, setTrLang, trans }) {
   if (v.error) return (
     <div className="ver-note old">This article did not exist yet on {at ? fmtDate(at) : "that date"}. It was first written on <b>{page && fmtDate(page.first_edit)}</b>.{" "}
       {page && <a onClick={() => setAt(utc(page.first_edit) + 86400000)}>Go there</a>}</div>
   );
   const m = v.meta, old = !!at && !!m.replaced, ref = at || END;
+  const translated = trans && !trans.loading && trans.blocks && trans.lang === trLang && trans.rev_id === m.rev_id;
+  const shown = translated ? trans.blocks : null;
   const ageClass = (i) => {
     if (!showAge || !ages || !(i in ages)) return "";
     const y = ages[i] ? (ref - utc(ages[i])) / YEAR_MS : 0;
@@ -179,10 +195,21 @@ function ArticleView({ v, page, at, picked, onBlame, showAge, setShowAge, ages, 
       <div className="age-bar">
         <button className={"btn" + (showAge ? " primary" : "")} onClick={() => setShowAge(!showAge)}><Flame size={14} /> {showAge ? "Hide" : "Show"} text age</button>
         {showAge && <span className="age-legend">unchanged for: <i className="a0" />&lt;1 y <i className="a1" />1–3 y <i className="a2" />3–6 y <i className="a3" />6–10 y <i className="a4" />10+ y{!ages && <Globe size={16} className="inline-globe" />}</span>}
-        {!showAge && <span className="muted">Tip: click any sentence to see who wrote it.</span>}
+        <label className="lang-pick" title="Translate this version with Gemini">
+          <Languages size={14} /><select value={trLang} onChange={(e) => setTrLang(e.target.value)}>
+            <option value="">Original (Suomi)</option>{LANG_OPTS.filter(([v]) => v && v !== "fi").map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+        </label>
+        <ListenButton label="Listen" getText={() => (shown || v.blocks).filter(([k]) => k === "p").slice(0, 4).map(([, t]) => t).join("\n\n")} />
+        {!showAge && !translated && <span className="muted">Tip: click any sentence to see who wrote it.</span>}
       </div>
+      {trans?.loading && <div className="loading"><Globe size={20} />Gemini is translating {v.blocks.length} paragraphs of this version…</div>}
+      {translated && <div className="tr-note"><Languages size={14} /> Machine translation into {trans.language} by Gemini of the version saved {fmtDate(m.saved)}. Hover a paragraph for the original Finnish; switch to the original to use “Who wrote this?”.</div>}
       {!v.blocks.length && <p className="muted">The full text of this article's history is still being archived. Its timeline, infobox and history are complete.</p>}
-      {v.blocks.map(([k, t], i) =>
+      {translated ? shown.map(([k, t], i) =>
+        k === "h" ? <h2 key={i}>{t}</h2> : k === "h3" ? <h3 key={i}>{t}</h3> :
+          <p key={i} className={(k === "li" ? "li" : "") + ageClass(i) + " tr"} title={trans.original[i]}>{t}</p>)
+      : v.blocks.map(([k, t], i) =>
         k === "h" ? <h2 key={i}>{t}</h2> : k === "h3" ? <h3 key={i}>{t}</h3> : (
           <p key={i} className={(k === "li" ? "li" : "") + ageClass(i)} title={showAge && ages && i in ages ? (ages[i] ? `Unchanged since ${fmtDate(ages[i])}` : "Changed within the last year") : undefined}>
             {splitSentences(t).map((s, j) => <span key={j} className={"s" + (picked === `${i}:${j}` ? " picked" : "")} onClick={() => onBlame(s, `${i}:${j}`)}>{s} </span>)}

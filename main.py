@@ -5,10 +5,10 @@ from decimal import Decimal
 
 import uvicorn
 from fastapi import FastAPI, Body
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from wikipilot import ask, history, lens, radar, db, mainpage
+from wikipilot import ask, history, lens, radar, db, mainpage, studio
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 WEB = os.path.join(ROOT, "web")                        # the classic, framework-free page (/classic)
@@ -50,6 +50,9 @@ def warm_up():
             if data["top"]:
                 _radar["data"] = data
             print("warm-up done:", [(i["label"], i["ms"]) for i in tr.items], flush=True)
+            for at in ("2026-10-01", "2010-01-01"):          # demo: the translation moment is instant
+                studio.translate(1256, at, "en")
+            print("warm-up translations done", flush=True)
         except Exception as e:
             print("warm-up skipped:", e, flush=True)
     threading.Thread(target=run, daemon=True).start()
@@ -86,10 +89,10 @@ def stats():
 
 
 @app.get("/api/ask")
-def ask_stream(q: str, date: str = ""):
+def ask_stream(q: str, date: str = "", lang: str = ""):
     def gen():
         try:
-            for event, data in ask.run(q, date or None):
+            for event, data in ask.run(q, date or None, studio.LANGS.get(lang)):
                 yield f"event: {event}\ndata: {json.dumps(data, default=_default, ensure_ascii=False)}\n\n"
         except Exception as e:  # surface errors in the UI instead of a dead stream
             yield f"event: error\ndata: {json.dumps(str(e))}\n\n"
@@ -120,6 +123,40 @@ def home():
 @app.get("/api/article/{pid}")
 def article(pid: int, at: str):
     return J(history.view(pid, at))
+
+
+# ---- Gemini studio: voice, translation, editor tools -----------------------------------------
+
+@app.post("/api/voice")
+def voice(body: dict = Body(...)):
+    """Speech (base64 audio from the browser's MediaRecorder) -> text + language."""
+    return J(studio.transcribe(body["audio"], body.get("mime", "audio/webm")))
+
+
+@app.post("/api/tts")
+def tts(body: dict = Body(...)):
+    data, mime = studio.speak(body["text"], body.get("voice", "Kore"))
+    return Response(content=data, media_type=mime)
+
+
+@app.get("/api/translate/{pid}")
+def translate(pid: int, at: str, lang: str = "en"):
+    return J(studio.translate(pid, at, lang))
+
+
+@app.post("/api/studio/improve")
+def improve(body: dict = Body(...)):
+    return J(studio.improve(body.get("title", ""), body["text"], body.get("task", "clarity")))
+
+
+@app.post("/api/studio/prompt")
+def image_prompt(body: dict = Body(...)):
+    return J({"prompt": studio.image_prompt(body.get("title", ""), body["text"], body.get("style", "watercolour"))})
+
+
+@app.post("/api/studio/image")
+def image(body: dict = Body(...)):
+    return J(studio.image(body["prompt"], body.get("image"), body.get("mime", "image/jpeg"), body.get("style")))
 
 
 @app.get("/api/ages/{pid}")

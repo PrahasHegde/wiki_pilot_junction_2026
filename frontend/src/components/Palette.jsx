@@ -1,14 +1,14 @@
 // ⌘K command palette: jump to an article, ask a question, or switch view — from anywhere.
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { BookOpen, Clock, Globe2, Home, Info, MessageCircleQuestion, Swords, CornerDownLeft } from "lucide-react";
+import { BookOpen, Clock, Globe2, Home, MessageCircleQuestion, Swords, CornerDownLeft, Wand2 } from "lucide-react";
 import { useApp } from "../store";
 import { useSuggest } from "./shell";
 import { looksLikeQuestion, nf } from "../lib";
 
 const VIEWS = [
-  ["home", "Main page", Home], ["ask", "Ask Wikipedia", MessageCircleQuestion], ["machine", "Time machine", Clock],
-  ["radar", "Edit wars", Swords], ["lens", "Language lens", Globe2], ["how", "How it works", Info],
+  ["home", "Main page", Home], ["ask", "Ask Wikipedia", MessageCircleQuestion], ["machine", "Time machine", Clock], ["studio", "Editor studio", Wand2],
+  ["radar", "Edit wars", Swords], ["lens", "Language lens", Globe2],
 ];
 
 export default function Palette({ open, onClose }) {
@@ -28,6 +28,7 @@ export default function Palette({ open, onClose }) {
     if (askItem && (looksLikeQuestion(t) || !pageItems.length)) out.push(askItem, ...pageItems);
     else out.push(...pageItems, ...(askItem ? [askItem] : []));
     if (pages[0]) out.push({ icon: Globe2, label: `Compare languages: ${pages[0].title}`, hint: "fi · sv · en", run: () => go(`lens/${pages[0].page_id}`) });
+    if (pages[0]) out.push({ icon: Wand2, label: `Edit in studio: ${pages[0].title}`, hint: "Gemini", run: () => go(`studio/${pages[0].page_id}`) });
     VIEWS.filter(([, l]) => !t || l.toLowerCase().includes(t.toLowerCase())).forEach(([k, l, icon]) =>
       out.push({ icon, label: l, hint: "go to", run: () => go(k) }));
     return out;

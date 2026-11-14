@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ExternalLink, History, Sparkles } from "lucide-react";
+import { ExternalLink, History, Languages, Sparkles } from "lucide-react";
 import { useApp } from "../store";
 import { WIKI, fmtDate, fmtShort, isoDay, md } from "../lib";
 import { CitePopover, Globe, Hood, Life, Skeleton } from "../components/ui";
 import { SearchBox } from "../components/shell";
+import { ListenButton } from "../components/voice";
+
+export const LANG_OPTS = [["", "Auto (your language)"], ["en", "English"], ["fi", "Suomi"], ["sv", "Svenska"], ["de", "Deutsch"], ["fr", "Français"], ["es", "Español"], ["et", "Eesti"], ["ru", "Русский"], ["hi", "हिन्दी"], ["ja", "日本語"], ["zh", "中文"], ["ar", "العربية"]];
 
 export const EXAMPLES = [
   { q: "What did Wikipedia say about the 1918 prison camps in 2008, and what has changed since?", t: "then vs now" },
@@ -38,12 +41,14 @@ export default function Ask() {
   const [phase, setPhase] = useState("idle"); // idle | planning | searching | writing | done | error
   const [err, setErr] = useState("");
   const buf = useRef("");
+  const [lang, setLang] = useState(() => { try { return localStorage.getItem("answerLang") || ""; } catch { return ""; } });
+  useEffect(() => { try { localStorage.setItem("answerLang", lang); } catch {} }, [lang]);
 
   useEffect(() => {
     if (!q) { setPhase("idle"); return; }
     setPlan(null); setSources([]); setText(""); setDrift(null); setTrace([]); setErr(""); setPhase("planning"); buf.current = "";
     const date = at ? isoDay(at) : "";
-    const es = new EventSource(`/api/ask?q=${encodeURIComponent(q)}` + (date ? `&date=${date}` : ""));
+    const es = new EventSource(`/api/ask?q=${encodeURIComponent(q)}` + (date ? `&date=${date}` : "") + (lang ? `&lang=${lang}` : ""));
     let raf = 0;
     es.addEventListener("plan", (e) => { setPlan(JSON.parse(e.data)); setPhase("searching"); });
     es.addEventListener("sources", (e) => { setSources(JSON.parse(e.data)); setPhase("writing"); });
@@ -57,7 +62,7 @@ export default function Ask() {
     es.addEventListener("done", () => { es.close(); cancelAnimationFrame(raf); setText(buf.current); setPhase((p) => (p === "error" ? p : "done")); });
     return () => { es.close(); cancelAnimationFrame(raf); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q]);
+  }, [q, lang]);
 
   const ask = (text) => go(`ask/${encodeURIComponent(text)}${at ? "/" + isoDay(at) : ""}`);
   const eraText = (s) => ({ then: "Wikipedia then", now: "Wikipedia today", asof: "Wikipedia as of " + (plan?.date ? fmtDate(plan.date) : "") }[s.era] || `Wikipedia in ${s.era}`)
@@ -84,6 +89,15 @@ export default function Ask() {
             </>}
           </div>
 
+          <div className="answer-tools">
+            <label className="lang-pick" title="Gemini answers in this language (changing it asks again)">
+              <Languages size={14} /> Answer in
+              <select value={lang} onChange={(e) => setLang(e.target.value)}>{LANG_OPTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
+            </label>
+            {phase === "done" && (text || drift) && (
+              <ListenButton label="Listen to the answer" getText={() => drift ? (drift.eras || []).map((e) => `${e.year === "now" ? "Today" : e.year}. ${e.answer}`).join(" ") + " " + (drift.summary || "") : text} />
+            )}
+          </div>
           <article className="answer mw-body">
             {err ? <p className="err">{err}</p>
               : drift ? <Drift d={drift} sources={sources} />

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Clock, Globe2, MessageCircleQuestion, Swords } from "lucide-react";
+import { ArrowRight, Clock, Globe2, MessageCircleQuestion, Sparkles, Swords, Wand2 } from "lucide-react";
 import { useApp } from "../store";
 import { api, fmtDate, fmtMonth, nf } from "../lib";
 import { Skeleton, Spark } from "../components/ui";
@@ -43,11 +43,9 @@ export default function Home({ stats }) {
   return (
     <div className="home">
       <motion.div className="mp-banner" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="mp-welcome">Welcome to <span className="accent">WikiPilot</span>,</div>
-        <div className="mp-sub">the time machine for Wikipedia that anyone can ask.</div>
-        <div className="mp-count">
-          {stats ? <><b>{nf(stats.versions)}</b> versions of <b>{nf(stats.pages)}</b> articles · <b>{nf(stats.passage_rows)}</b> passages through time · 2003 – 2026</> : "Finnish Wikipedia's history of Finland · every version since 2003"}
-        </div>
+        <div className="agent-badge"><Sparkles size={13} /> AI agent for Wikipedia</div>
+        <div className="mp-welcome">Meet <span className="accent">WikiPilot</span>.</div>
+        <div className="mp-sub">Search engines show you today's Wikipedia. <b>WikiPilot has read every version ever written.</b></div>
         <SearchBox className="ask-box" big placeholder="Ask Wikipedia — now, or as it was on any day since 2003"
           onPage={(r) => go(`machine/${r.page_id}`)} onAsk={(q) => go(`ask/${encodeURIComponent(q)}`)} />
         <div className="chips">
@@ -98,6 +96,7 @@ export default function Home({ stats }) {
         <div className="mp-areas">
           {[["ask", MessageCircleQuestion, "Ask Wikipedia", "Grounded, cited answers from Wikipedia now, as of any date, then vs now, or how the answer drifted."],
             ["machine", Clock, "Time machine", "Read any article on any day, watch it rewrite itself, see text age and blame any sentence."],
+            ["studio", Wand2, "Editor studio", "Gemini checks neutrality and citations, tightens prose, and illustrates sections."],
             ["radar", Swords, "Edit wars", "Every revert in 862,076 versions: where editors disagree, and when."],
             ["lens", Globe2, "Language lens", "The same topic in Finnish, Swedish and English Wikipedia, compared."]].map(([k, Icon, t, s]) => (
             <a key={k} href={"#" + k} className="area"><Icon size={20} /><b>{t}</b><span>{s}</span></a>

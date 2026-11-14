@@ -5,7 +5,7 @@ import { END, START, YEAR_MS, utc } from "./lib";
 const Ctx = createContext(null);
 export const useApp = () => useContext(Ctx);
 
-// #home  #ask/<q>[/<date>]  #machine/<id>[/<date>|today][/history|compare]  #lens/<id>  #radar  #how
+// #home  #ask/<q>[/<date>]  #machine/<id>[/<date>|today][/history|compare]  #lens/<id>  #studio/<id>  #radar
 function parseHash() {
   const [view, a, b, c] = location.hash.slice(1).split("/").map(decodeURIComponent);
   return { view: view || "home", a, b, c };
@@ -39,7 +39,7 @@ export function AppProvider({ children }) {
     const on = () => {
       const r = parseHash();
       setRoute(r);
-      if ((r.view === "machine" || r.view === "ask") && r.b && r.b !== "today") {
+      if ((r.view === "machine" || r.view === "ask" || r.view === "studio") && r.b && r.b !== "today") {
         const t = utc(r.b.length === 7 ? r.b + "-01" : r.b);
         if (Number.isFinite(t)) setAtRaw(Math.max(START, Math.min(END, t)));
       }

@@ -10,7 +10,7 @@ import Ask from "./views/Ask";
 import Machine from "./views/Machine";
 import Radar from "./views/Radar";
 import Lens from "./views/Lens";
-import How from "./views/How";
+import StudioPage from "./views/StudioPage";
 
 const TRY = [
   ["#ask/" + encodeURIComponent("What did Wikipedia say about the 1918 prison camps in 2008, and what has changed since?"), "1918 camps: then vs now"],
@@ -49,9 +49,9 @@ export default function App() {
           <AnimatePresence mode="wait">
             {v === "ask" ? <Page k="ask"><Ask /></Page>
               : v === "machine" ? <Page k="machine"><Machine onPlayFrom={setPlayFrom} /></Page>
+              : v === "studio" ? <Page k="studio"><StudioPage /></Page>
               : v === "radar" ? <Page k="radar"><Radar /></Page>
               : v === "lens" ? <Page k="lens"><Lens /></Page>
-              : v === "how" ? <Page k="how"><How stats={stats} /></Page>
               : <Page k="home"><Home stats={stats} /></Page>}
           </AnimatePresence>
         </main>
