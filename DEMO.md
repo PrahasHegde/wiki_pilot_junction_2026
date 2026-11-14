@@ -11,7 +11,8 @@ history* (today's date in past years) and *In the edit wars*.
 > WikiPilot can."
 
 ## 0:15 — The hook (Ask)
-Tip: `?theme=light` or `?theme=dark` in the URL picks the theme for the projector.
+Tip: `?theme=light` or `?theme=dark` in the URL picks the theme for the projector. Press **⌘K / Ctrl+K**
+at any point: type "Kekkonen" to open the article, a question to ask it, or "2008" to travel there.
 
 Click the chip **then vs now — 1918 prison camps in 2008**.
 - Point at the plan pills: Gemini read "in 2008 … what has changed since" as *Then vs now*.

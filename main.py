@@ -10,16 +10,23 @@ from fastapi.staticfiles import StaticFiles
 
 from wikipilot import ask, history, lens, radar, db, mainpage
 
-WEB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
+ROOT = os.path.dirname(os.path.abspath(__file__))
+WEB = os.path.join(ROOT, "web")                        # the classic, framework-free page (/classic)
+DIST = os.path.join(ROOT, "frontend", "dist")          # the React app (npm run build in frontend/)
 app = FastAPI(title="WikiPilot")
 app.mount("/static", StaticFiles(directory=WEB), name="static")
+if os.path.isdir(os.path.join(DIST, "assets")):
+    app.mount("/assets", StaticFiles(directory=os.path.join(DIST, "assets")), name="assets")
 
 
 @app.middleware("http")
-async def no_stale_assets(request, call_next):
-    """Browsers revalidate the page and its assets (cheap ETag check) instead of running stale code."""
+async def cache_policy(request, call_next):
+    """Pages revalidate (cheap ETag check); Vite's content-hashed assets are cached for good."""
     resp = await call_next(request)
-    if request.url.path == "/" or request.url.path.startswith("/static/"):
+    p = request.url.path
+    if p.startswith("/assets/"):
+        resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    elif p in ("/", "/classic") or p.startswith("/static/"):
         resp.headers["Cache-Control"] = "no-cache"
     return resp
 
@@ -64,6 +71,12 @@ def J(data, status=200):
 
 @app.get("/")
 def index():
+    react = os.path.join(DIST, "index.html")
+    return FileResponse(react if os.path.exists(react) else os.path.join(WEB, "index.html"))
+
+
+@app.get("/classic")
+def classic():
     return FileResponse(os.path.join(WEB, "index.html"))
 
 

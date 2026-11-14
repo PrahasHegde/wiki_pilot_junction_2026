@@ -10,7 +10,9 @@ It looks and works like Wikipedia, so readers and editors know their way around 
 click. The Main Page has *Featured article*, *Did you know…*, *In the edit wars* and *On this day*,
 all computed from the edit history in SQL. Article pages have an infobox, *Read · Compare · View
 history* tabs, superscript citations with hover previews, an "old revision" notice, and Wikipedia's
-two-column diff. Day and night themes are included.
+two-column diff. Day and night themes are included. The frontend is a React app (Vite, Framer Motion,
+Lucide) with a ⌘K command palette, skeleton loading states and animated transitions. During
+development, `npm run dev` in `frontend/` proxies the API to the FastAPI server.
 
 It covers **both tracks, built as one system**. All of it runs on MariaDB features:
 
@@ -78,7 +80,8 @@ python scripts/load_s.py             # fi/sv/en articles + bge-m3 vectors (langu
 python scripts/analyze.py            # revert/edit-war stats for the radar
 python scripts/archive_s3.py         # full text of every version → MariaDB S3 tables (cold tier)
 
-python main.py                       # http://localhost:8765
+cd frontend && npm install && npm run build && cd ..   # the React app → frontend/dist
+python main.py                       # http://localhost:8765  (classic page: /classic)
 ```
 
 Every loader can be stopped and run again: it resumes where it left off. The long jobs pause
@@ -128,7 +131,7 @@ Every view in the app has an **Under the hood** panel showing the exact SQL it r
  analyze ──► version_stat (window functions over FOR SYSTEM_TIME ALL)
 
  main.py (FastAPI, SSE) ── Gemini 3.8 Flash (answers, drift, lens) · 3.5 Flash (planning, blame story)
- web/ (no framework): Ask · Time machine · Edit wars · Language lens · How it works
+ frontend/ (React + Vite, Framer Motion, Lucide): Main Page · Ask · Time machine · Edit wars · Language lens · How it works · ⌘K palette
 ```
 
 ## Choices, and why
