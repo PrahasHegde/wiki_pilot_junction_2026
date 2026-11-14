@@ -26,7 +26,8 @@ It covers **both tracks, built as one system**. All of it runs on MariaDB featur
 | **Edit-war radar** | Window functions over the full history (`sha1` revert detection, `LAG(user)`) | Where knowledge is contested: named editors undoing each other vs vandalism cleanup |
 | **Cold history in object storage** | **MariaDB S3 storage engine**: `ALTER TABLE … ENGINE=S3` on an S3-compatible bucket (IronShard) | The full text of every version (12.2 GB of wikitext) stays queryable with SQL, without local disk |
 | **Language lens** | The dataset's bge-m3 vectors in a second vector index, cross-language | Same topic in fi / sv / en: differing facts, omissions and framing (NPOV), with suggestions for editors |
-| **Voice, translation, editor studio** | Gemini 3.5 / 3.8 Flash, Flash TTS, Flash Image over article versions read `FOR SYSTEM_TIME AS OF` | Ask by voice, listen to answers, read any version in 12 languages, fix NPOV and citations, illustrate and edit images |
+| **Edit-war analysis** | Reverts from `version_stat`, the undone and restored versions read from the hot table or the S3 tier, diffed | What each war was about, how each side portrays the subject (hero / villain / victim / neutral, positive / negative), who prevailed, which version is closer to NPOV |
+| **Voice, translation, editor studio** | Gemini 3.5 Flash, Flash TTS, Flash Image over article versions read `FOR SYSTEM_TIME AS OF` | Ask by voice, listen to answers, read any version in 12 languages, fix NPOV and citations, illustrate and edit images |
 
 ## Gemini inside WikiPilot
 
@@ -36,7 +37,7 @@ Five Gemini models, ten jobs. Each one is where a reader or an editor needs it:
 |---|---|
 | **Gemini Embedding 2** (768-d) | Embeds 288,642 passages through time, and every question, for the vector index on the system-versioned table |
 | **Gemini 3.5 Flash** | Reads the question for time ("in 2008", "what changed since", "over the years") · **voice input**: transcribes a spoken question in any language · **translates** any article version paragraph by paragraph · tells a sentence's life story in blame · writes historically careful image prompts |
-| **Gemini 3.8 Flash** | Grounded, cited answers (then vs now, drift timeline) · compares fi/sv/en Wikipedia (NPOV) · **editor studio**: checks a paragraph for neutrality, citations needed, clarity and length, and drafts the fix as a Wikipedia-style diff |
+| **Gemini 3.5 Flash** (thinking off for speed) | Grounded, cited answers (then vs now, drift timeline) · compares fi/sv/en Wikipedia (NPOV) · **edit-war analysis** (portrayal and sentiment of each side) · **editor studio**: checks a paragraph for neutrality, citations needed, clarity and length, and drafts the fix as a Wikipedia-style diff |
 | **Gemini 3.8 Flash TTS** | **Listen**: reads answers and articles aloud |
 | **Gemini 3.1 Flash Image** | **Illustrate**: paints an illustration of a section, then **edits it from plain-language instructions** (or edits an uploaded image), labelled AI-generated with Wikimedia Commons guidance |
 
@@ -77,6 +78,8 @@ Five Gemini models, ten jobs. Each one is where a reader or an editor needs it:
   read streamed tables from object storage for 16 minutes. A small `archive_map` table (page-id
   range → table) sends each read to exactly one S3 table by primary key: 0.5–2 s. Blame over all
   1,376 versions of a cold article, straight from S3: ~19 s.
+- **Speed comes from turning thinking off, not from the network.** A Gemini round trip is ~150 ms. Most of the latency was the model's hidden reasoning: gemini-3.8-flash spent ~1,100 thought tokens on a six-sentence answer (14 s); gemini-3.5-flash with `thinkingBudget: 0` wrote it in 2 s. For answers grounded in retrieved passages, quality held. Ask now shows its first words in ~4–8 s.
+- **Edit wars are explained, not just counted.** For *Ilkka Kanerva, March 2008*, the restored wording reads "got caught again sending nearly 200 text messages" (critical, portraying him as a villain); the reverted side had softened it to "received media attention". For *Pekka Haavisto, January 2012*, the fight was over adding his partner's birth date and online rumours; the reverters' neutral version prevailed.
 - **One embedding model per index, always.** A query embedded with a different model than the
   passages returns nonsense with no error. We record the passage model in a `meta` table, and the
   app embeds questions with that model.
@@ -151,7 +154,7 @@ Every view in the app has an **Under the hood** panel showing the exact SQL it r
  dataset S (fi/sv/en + bge-m3) ──► load_s   ──► article_now + article_now_vector (VECTOR INDEX)
  analyze ──► version_stat (window functions over FOR SYSTEM_TIME ALL)
 
- main.py (FastAPI, SSE) ── Gemini 3.8 Flash (answers, drift, lens) · 3.5 Flash (planning, blame story)
+ main.py (FastAPI, SSE) ── Gemini 3.5 Flash, thinking off (answers, drift, lens, war analysis, studio, planning)
  frontend/ (React + Vite, Framer Motion, Lucide): Main Page · Ask · Time machine · Editor studio · Edit wars · Language lens · ⌘K palette
 ```
 

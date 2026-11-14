@@ -1,12 +1,23 @@
-import { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Sparkles } from "lucide-react";
+import WarPanel from "./WarPanel";
 import { api, fmtMonth, nf } from "../lib";
 import { Hood, Kpis, Skeleton } from "../components/ui";
 import { useApp } from "../store";
 
 export default function Radar() {
-  const { go } = useApp();
+  const { go, route, sync } = useApp();
   const [r, setR] = useState(null);
+  const [war, setWar] = useState(null);
+  const open = (w) => { setWar(w); sync(`radar/${w.page_id}/${w.month}`); };
+  const close = useCallback(() => { setWar(null); sync("radar"); }, [sync]);
+  useEffect(() => {                     // deep link: #radar/<page_id>/<YYYY-MM>
+    if (route.a && route.b && /^\d{4}-\d{2}$/.test(route.b)) {
+      const w = r?.wars.find((x) => x.page_id === +route.a && x.month === route.b);
+      setWar(w || { page_id: +route.a, month: route.b, title: "Edit war" });
+    }
+  }, [route.a, route.b, r]);
   const [st, setSt] = useState(null);
   useEffect(() => { api("/api/radar").then(setR); api("/api/stats").then(setSt); }, []);
   const tot = r ? r.years.reduce((a, y) => ({ e: a.e + +y.edits, r: a.r + +y.reverts, w: a.w + +y.war_reverts, an: a.an + +y.anon }), { e: 0, r: 0, w: 0, an: 0 }) : null;
@@ -24,16 +35,19 @@ export default function Radar() {
         <div className="two">
           <div className="card"><h3>Most contested articles</h3><TopTable top={r.top} go={go} /></div>
           <div className="card"><h3>The fiercest edit wars</h3>
+            <div className="war-tip"><Sparkles size={13} /> Click a war: Gemini explains what was fought over and how each side portrayed the subject.</div>
             <div className="wars">{r.wars.map((w, i) => (
-              <motion.a key={w.page_id + w.month} className="war" href={`#machine/${w.page_id}/${w.month}-28`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: Math.min(i, 12) * 0.03 }}>
+              <motion.button key={w.page_id + w.month} className="war" onClick={() => open(w)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: Math.min(i, 12) * 0.03 }}>
                 <div className="war-head"><span className="war-t">{w.title}</span><span className="war-n">{w.war_reverts} reverts</span></div>
                 <small>{fmtMonth(w.month)} · {(w.reverters || "").slice(0, 90)} ⇄ {(w.reverted || "").slice(0, 90)}</small>
-              </motion.a>
+                <span className="war-why">Why they fought →</span>
+              </motion.button>
             ))}</div>
           </div>
         </div>
         <Hood items={r.trace} />
       </>}
+      <AnimatePresence>{war && <WarPanel key={war.page_id + war.month} war={war} onClose={close} />}</AnimatePresence>
     </div>
   );
 }

@@ -1,7 +1,9 @@
 """Gemini over plain REST: embeddings, JSON generation and streamed generation."""
 import json, time, random
 import requests
-from .config import GEMINI_API_KEY, GEMINI_MODEL, GEMINI_FAST_MODEL, GEMINI_EMBED_MODEL, EMBED_DIM
+from .config import GEMINI_API_KEY, GEMINI_MODEL, GEMINI_FAST_MODEL, GEMINI_EMBED_MODEL, EMBED_DIM, GEMINI_THINKING
+
+THINKING = int(GEMINI_THINKING) if str(GEMINI_THINKING).strip() not in ("", "default") else None
 
 BASE = "https://generativelanguage.googleapis.com/v1beta/models/"
 _session = requests.Session()
@@ -51,7 +53,8 @@ def _body(prompt, system=None, json_schema=None, temperature=0.2, thinking=None)
         body["generationConfig"]["responseMimeType"] = "application/json"
         if json_schema:
             body["generationConfig"]["responseSchema"] = json_schema
-    if thinking is not None:
+    thinking = THINKING if thinking is None else thinking
+    if thinking is not None:          # thinking tokens are most of the latency: off by default
         body["generationConfig"]["thinkingConfig"] = {"thinkingBudget": thinking}
     return body
 

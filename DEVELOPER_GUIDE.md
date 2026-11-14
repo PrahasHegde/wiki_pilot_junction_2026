@@ -76,6 +76,7 @@ npm run dev                          # live-reload dev server on :5173, proxies 
 | `#studio` · `#studio/1256` | Editor studio landing / with *Talvisota* open |
 | `#lens/1256` | Finnish vs Swedish vs English Winter War |
 | `#radar` | Edit wars |
+| `#radar/10907/2008-03` | Edit-war analysis: Ilkka Kanerva, March 2008 |
 | `?age=1` | Opens the article with *text age* switched on |
 
 Handy page ids: **1256** Talvisota · **1150** Suomen sisällissota (Civil War) · **1187** Tarja Halonen ·
@@ -99,7 +100,7 @@ Handy page ids: **1256** Talvisota · **1150** Suomen sisällissota (Civil War) 
          ┌─────────────────▼─────────────────┐   ┌────────▼─────────┐        ┌────────▼─────────┐
          │ MariaDB 12.3 (Docker, :3309)      │   │ Gemini API        │        │ IronShard S3     │
          │ article   WITH SYSTEM VERSIONING  │   │ Embedding 2       │        │ bucket wikipilot │
-         │ passage   WITH SYSTEM VERSIONING  │   │ 3.5 / 3.8 Flash   │        │ (rev_archive_*)  │
+         │ passage   WITH SYSTEM VERSIONING  │   │ 3.5 Flash (fast)  │        │ (rev_archive_*)  │
          │           + VECTOR INDEX+FULLTEXT │   │ Flash TTS         │        └────────▲─────────┘
          │ version_stat · article_now(+vec)  │   │ Flash Image       │                 │
          │ rev_archive_01..16  ENGINE=S3 ────┼───┼───────────────────┼─────────────────┘
@@ -124,7 +125,7 @@ Handy page ids: **1256** Talvisota · **1150** Suomen sisällissota (Civil War) 
    `VEC_DISTANCE_COSINE` (vector index) + `MATCH … AGAINST`, fused by reciprocal rank, both
    `FOR SYSTEM_TIME AS OF`.
 4. Exact version ids for the citations: `article FOR SYSTEM_TIME AS OF` → `?oldid=` links.
-5. Gemini 3.8 Flash streams the answer over SSE. Every sentence cites `[n]`, and the "then"
+5. Gemini 3.5 Flash (thinking off) streams the answer over SSE. Every sentence cites `[n]`, and the "then"
    citations show in green.
 6. The *Under the hood* panel shows every SQL statement with its timing.
 
@@ -201,6 +202,7 @@ SELECT text FROM rev_archive_07 WHERE page_id = ? AND ts = ?;     -- table chose
 | **Text age** | Heat map: fresh text glows, settled text fades | `passage.row_start` of passages alive at that moment dates every paragraph | `history.ages` |
 | **Compare / View history** | Wikipedia's two-column diff; Special:History-style list with *cur \| prev*, reverts tagged | Versions + revert flags from window functions | `history.diff`, `history.timeline` |
 | **Edit wars** | KPIs, activity per year, heat map article × year, most contested articles, fiercest wars | `version_stat`: named editors undoing named editors = war; undoing anonymous = vandalism cleanup | `radar.py`, `Radar.jsx` |
+| **Edit-war analysis** | Click a war in *Edit wars* (or *Why they fought* on the Main Page): headline, dispute type, two side cards with **portrayal** (hero / villain / victim / neutral / mixed), **sentiment** meter and tone words, quotes fi+en, what changed, outcome today, NPOV verdict, the contested wording with Wikipedia diff links | `version_stat` reverts → undone vs restored versions (hot table or S3, read in parallel) → paragraph/word diff → Gemini JSON; top 6 wars pre-computed at warm-up | `wars.py`, `WarPanel.jsx` |
 | **Language lens** | fi / sv / en side by side: differences by kind (factual, omission, framing), suggestions for editors, related articles in each language | Same Wikidata id; bge-m3 vector index for closest articles across languages; Gemini 3.8 Flash compares | `lens.py`, `Lens.jsx` |
 | **🎙 Voice** | Mic in every search box; speak in any language | Browser `MediaRecorder` → Gemini 3.5 Flash transcribes + detects language → asks | `studio.transcribe`, `voice.jsx` |
 | **🔊 Listen** | Read answers and articles aloud | Gemini 3.8 Flash TTS → WAV | `studio.speak` |
@@ -219,7 +221,7 @@ Five models, ten jobs (`wikipilot/gemini.py`, `wikipilot/studio.py`):
 |---|---|---|
 | **Gemini Embedding 2** (768-d) | Embeds 288,642 passages and every question | 0.3 s / question |
 | **Gemini 3.5 Flash** | ① plans the time intent of a question ② transcribes voice ③ translates article versions ④ tells a sentence's story in blame ⑤ writes image prompts | 2–6 s (translation of a long article ~30 s, then cached) |
-| **Gemini 3.8 Flash** | ⑥ grounded answers and drift timelines ⑦ language-lens comparison ⑧ editor studio rewrites (NPOV, citations, clarity, shorten) | answer 25–40 s streamed; studio ~16 s |
+| **Gemini 3.5 Flash** (also the model for ⑥–⑧, thinking off) | ⑥ grounded answers and drift timelines ⑦ language-lens comparison and **edit-war analysis** ⑧ editor studio rewrites (NPOV, citations, clarity, shorten) | first words ~4–8 s, studio ~3 s, war analysis ~7–10 s (top wars pre-computed) |
 | **Gemini 3.8 Flash TTS** | ⑨ reads answers and articles aloud | ~3.5 s |
 | **Gemini 3.1 Flash Image** | ⑩ illustrates a section and edits the image from instructions or an upload | ~9–11 s |
 
@@ -247,6 +249,7 @@ Wikimedia Commons guidance. Query embeddings always use the model recorded in `m
 | POST | `/api/studio/improve` `{title, text, task}` | `{rewrite, rewrite_en, issues[], summary}` |
 | POST | `/api/studio/prompt` `{title, text, style}` | `{prompt}` |
 | POST | `/api/studio/image` `{prompt, image?, mime?, style?}` | `{image (base64), mime, model, ms}` |
+| GET | `/api/war/{id}/{YYYY-MM}` | Edit-war analysis: sides, portrayal, sentiment, changes, outcome, NPOV, disputes |
 | GET | `/api/lens/{id}` | Language versions, Gemini analysis, nearest articles per language |
 | GET | `/api/radar` · `/api/home` · `/api/stats` · `/api/activity` | Edit wars · Main Page · totals · time-bar strip |
 
@@ -296,7 +299,8 @@ that use "virtual time" catch animations mid-flight and look broken when they ar
 | `gemini_api_key` | Gemini API |
 | `access_key`, `secret_key` | IronShard S3 (used by MariaDB's S3 engine via docker-compose and by boto3) |
 | `S3_ENDPOINT`, `S3_BUCKET` | `https://s3.ironshard.ai`, `wikipilot` |
-| `GEMINI_MODEL`, `GEMINI_FAST_MODEL`, `GEMINI_EMBED_MODEL`, `GEMINI_TTS_MODEL`, `GEMINI_IMAGE_MODEL`, `GEMINI_STT_MODEL` | Optional overrides (defaults: 3.8 Flash, 3.5 Flash, Embedding 2, 3.8 Flash TTS, 3.1 Flash Image, 3.5 Flash) |
+| `GEMINI_MODEL`, `GEMINI_FAST_MODEL`, `GEMINI_EMBED_MODEL`, `GEMINI_TTS_MODEL`, `GEMINI_IMAGE_MODEL`, `GEMINI_STT_MODEL` | Optional overrides (defaults: 3.5 Flash, 3.5 Flash, Embedding 2, 3.8 Flash TTS, 3.1 Flash Image, 3.5 Flash) |
+| `GEMINI_THINKING` (0) | Thinking-token budget for text generation; 0 = off, the main speed lever |
 | `DB_PORT` (3309), `PORT` (8765), `MIN_FREE_GB` (3) | Optional |
 
 The MariaDB database, user and Docker volume are still named `palimpsest` (the project's codename).

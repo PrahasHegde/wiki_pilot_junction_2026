@@ -197,7 +197,7 @@ export function Sidebar({ stats, open, tryLinks }) {
 
       <div className="nav-h">Powered by</div>
       <div className="nav-card nav-powered">
-        {[[Database, "MariaDB 12.3", "Versioned · vectors · S3"], [Sparkles, "Gemini", "Embedding 2 · 3.8 Flash"], [BookOpen, "Wikipedia", "fi · sv · en · CC BY-SA"]].map(([Icon, n, d]) => (
+        {[[Database, "MariaDB 12.3", "Versioned · vectors · S3"], [Sparkles, "Gemini", "Embedding 2 · 3.5 Flash"], [BookOpen, "Wikipedia", "fi · sv · en · CC BY-SA"]].map(([Icon, n, d]) => (
           <div key={n} className="pw"><span className="pw-ico"><Icon size={14} /></span><span><b>{n}</b><small>{d}</small></span></div>
         ))}
       </div>

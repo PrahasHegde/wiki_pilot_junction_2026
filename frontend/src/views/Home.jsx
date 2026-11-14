@@ -74,7 +74,7 @@ export default function Home({ stats }) {
         <div className="mp-col">
           <Box tone="blue" title="In the edit wars" delay={0.08}>
             {!wars ? <Skeleton lines={5} /> : <ul>{wars.map((w) => (
-              <li key={w.page_id + w.month}><b>{fmtMonth(w.month)}</b> – <A o={w} />: {w.war_reverts} reverts between named editors in one month. <a href={`#machine/${w.page_id}/${w.month}-28`}>Go to that month</a></li>
+              <li key={w.page_id + w.month}><b>{fmtMonth(w.month)}</b> – <A o={w} />: {w.war_reverts} reverts between named editors in one month. <a href={`#radar/${w.page_id}/${w.month}`}>Why they fought</a></li>
             ))}</ul>}
             <div className="more"><a href="#radar">All edit wars <ArrowRight size={13} /></a></div>
           </Box>

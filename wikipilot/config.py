@@ -18,8 +18,13 @@ def env(name, default=None):
 
 
 GEMINI_API_KEY = env("GEMINI_API_KEY") or env("GOOGLE_API_KEY")
-GEMINI_MODEL = env("GEMINI_MODEL", "gemini-3.8-flash")
+# Answers, drift, lens, editor studio. gemini-3.5-flash with thinking off answers grounded questions
+# ~7x faster than gemini-3.8-flash with thinking (2 s vs 14 s measured); set GEMINI_MODEL /
+# GEMINI_THINKING in .env to trade speed for deeper reasoning.
+GEMINI_MODEL = env("GEMINI_MODEL", "gemini-3.5-flash")
 GEMINI_FAST_MODEL = env("GEMINI_FAST_MODEL", "gemini-3.5-flash")
+# Thinking-token budget for text generation: 0 = off (fastest). Empty = the model's default.
+GEMINI_THINKING = env("GEMINI_THINKING", "0")
 GEMINI_EMBED_MODEL = env("GEMINI_EMBED_MODEL", "gemini-embedding-2")
 EMBED_DIM = int(env("EMBED_DIM", 768))
 

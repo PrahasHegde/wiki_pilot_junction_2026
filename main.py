@@ -8,7 +8,7 @@ from fastapi import FastAPI, Body, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from wikipilot import ask, history, lens, radar, db, mainpage, studio
+from wikipilot import ask, history, lens, radar, db, mainpage, studio, wars
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DIST = os.path.join(ROOT, "frontend", "dist")          # the React app (npm run build in frontend/)
@@ -51,6 +51,15 @@ def warm_up():
             for at in ("2026-10-01", "2010-01-01"):          # demo: the translation moment is instant
                 studio.translate(1256, at, "en")
             print("warm-up translations done", flush=True)
+            seen = set()                                     # demo: the fiercest wars open instantly
+            for w in (_radar.get("data") or {}).get("wars", []):
+                if w["page_id"] not in seen and len(seen) < 6:
+                    seen.add(w["page_id"])
+                    try:
+                        wars.analyze(w["page_id"], w["month"])
+                    except Exception as e:
+                        print("war warm-up skipped:", e, flush=True)
+            print("warm-up war analyses done", flush=True)
         except Exception as e:
             print("warm-up skipped:", e, flush=True)
     threading.Thread(target=run, daemon=True).start()
@@ -208,6 +217,12 @@ def activity():
 
 
 _radar = {}
+
+
+@app.get("/api/war/{pid}/{month}")
+def war(pid: int, month: str):
+    """What one edit war was about, and how each side portrayed the subject (Gemini over SQL diffs)."""
+    return J(wars.analyze(pid, month))
 
 
 @app.get("/api/radar")
