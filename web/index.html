@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WikiPilot — Wikipedia, read through time</title>
+<meta name="description" content="Ask Wikipedia as it stood on any day since 2003, watch articles rewrite themselves, blame any sentence, and find where knowledge is contested. Built on MariaDB.">
+<link rel="stylesheet" href="/static/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='28' fill='white' stroke='%23202122' stroke-width='3'/><ellipse cx='32' cy='32' rx='12' ry='28' fill='none' stroke='%23202122' stroke-width='2'/><path d='M4 32h56M9 18h46M9 46h46' stroke='%23202122' stroke-width='2'/><path d='M32 32 L32 14 M32 32 L45 39' stroke='%2336c' stroke-width='4' stroke-linecap='round'/></svg>">
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+
+<header class="hdr">
+  <button class="hamburger" id="hamburger" aria-label="Main menu" title="Main menu">
+    <svg viewBox="0 0 20 20" width="20" height="20"><path d="M1 3h18v2H1zm0 6h18v2H1zm0 6h18v2H1z" fill="currentColor"/></svg>
+  </button>
+  <a class="logo" href="#home" aria-label="WikiPilot main page">
+    <svg class="logo-mark" viewBox="0 0 64 64" aria-hidden="true">
+      <circle cx="32" cy="32" r="28" class="lm-globe"/>
+      <ellipse cx="32" cy="32" rx="12" ry="28" class="lm-line"/>
+      <path d="M4 32h56M9 18h46M9 46h46" class="lm-line"/>
+      <path d="M32 32 L32 13" class="lm-hand"/><path d="M32 32 L46 40" class="lm-hand"/>
+      <circle cx="32" cy="32" r="3.2" class="lm-pin"/>
+    </svg>
+    <span class="logo-words"><span class="wordmark">WikiPilot</span><span class="tagline">Wikipedia, read through time</span></span>
+  </a>
+  <form class="search" id="searchForm" role="search" autocomplete="off">
+    <svg class="search-ico" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12.2 13.6a7 7 0 111.4-1.4l5.4 5.4-1.4 1.4zM3 8a5 5 0 1010 0A5 5 0 003 8z"/></svg>
+    <input id="search" type="search" placeholder="Search articles, or ask a question…" aria-label="Search articles or ask a question">
+    <button type="submit">Search</button>
+    <div class="suggest" id="suggest" role="listbox"></div>
+  </form>
+  <div class="hdr-tools">
+    <button class="timepill" id="timepill" title="The moment you are reading Wikipedia at">
+      <svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M10 1a9 9 0 110 18 9 9 0 010-18zm0 2a7 7 0 100 14 7 7 0 000-14zm1 2v4.6l3.2 3.2-1.4 1.4L9 10.4V5z"/></svg>
+      <span id="timepillText">Today</span>
+    </button>
+    <button class="icon-btn" id="theme" title="Day / night" aria-label="Toggle dark mode">
+      <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M10 2a8 8 0 100 16A8 8 0 0010 2zm0 2v12a6 6 0 010-12z"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- The time bar: one moment in time shared by every page. -->
+<section class="timebar" id="timebar" aria-label="Time travel">
+  <div class="tb-row">
+    <div class="tb-label"><span class="tb-eyebrow">Reading Wikipedia as of</span> <span class="tb-when" id="when">today</span></div>
+    <div class="tb-actions">
+      <button class="cdx-btn" id="playBtn" title="Animate through time">▶ Play history</button>
+      <button class="cdx-btn quiet" id="nowBtn">Back to today</button>
+    </div>
+  </div>
+  <div class="track" id="track" role="slider" aria-label="Date" tabindex="0">
+    <canvas id="strata"></canvas>
+    <div class="years" id="years"></div>
+    <div class="handle" id="handle"><span></span></div>
+  </div>
+</section>
+
+<div class="page">
+  <nav class="sidebar" id="sidebar" aria-label="Main menu">
+    <div class="nav-h">Main menu</div>
+    <ul>
+      <li><a href="#home" data-tab="home">Main page</a></li>
+      <li><a href="#ask" data-tab="ask">Ask Wikipedia</a></li>
+      <li><a href="#machine" data-tab="machine">Time machine</a></li>
+      <li><a href="#radar" data-tab="radar">Edit wars</a></li>
+      <li><a href="#lens" data-tab="lens">Language lens</a></li>
+      <li><a href="#how" data-tab="how">How it works</a></li>
+    </ul>
+    <div class="nav-h">Try</div>
+    <ul id="navTry"></ul>
+    <div class="nav-h">In numbers</div>
+    <ul class="nav-stats" id="navStats"></ul>
+    <div class="nav-h">Powered by</div>
+    <ul class="nav-stats"><li>MariaDB 12.3 · vector index on system-versioned tables · S3 engine</li><li>Gemini embedding 2 · Gemini 3.8 Flash</li></ul>
+  </nav>
+
+  <main class="content" id="content">
+
+    <!-- ================= MAIN PAGE ================= -->
+    <section class="view on" id="view-home">
+      <div class="mp-banner">
+        <div class="mp-welcome">Welcome to <a href="#how">WikiPilot</a>,</div>
+        <div class="mp-sub">the time machine for Wikipedia that anyone can ask.</div>
+        <div class="mp-count" id="mpCount">Finnish Wikipedia's history of Finland · every version since 2003</div>
+        <form class="ask big" id="mpAsk"><input id="mpQ" placeholder="Ask Wikipedia — now, or as it was on any day since 2003" aria-label="Ask"><button>Ask</button></form>
+        <div class="chips" id="mpChips"></div>
+      </div>
+      <div class="mp-grid">
+        <div class="mp-col">
+          <div class="mp-box green"><h2 class="mp-h">From today's featured article</h2><div class="mp-body" id="mpFeatured"><div class="loading"><span class="spin"></span>Loading…</div></div></div>
+          <div class="mp-box green"><h2 class="mp-h">Did you know …</h2><div class="mp-body" id="mpDyk"><div class="loading"><span class="spin"></span>Asking the database…</div></div></div>
+        </div>
+        <div class="mp-col">
+          <div class="mp-box blue"><h2 class="mp-h">In the edit wars</h2><div class="mp-body" id="mpWars"><div class="loading"><span class="spin"></span>Loading…</div></div></div>
+          <div class="mp-box blue"><h2 class="mp-h">On this day in Wikipedia's history</h2><div class="mp-body" id="mpOtd"><div class="loading"><span class="spin"></span>Loading…</div></div></div>
+        </div>
+      </div>
+      <div class="mp-box grey"><h2 class="mp-h">Other areas of WikiPilot</h2><div class="mp-body mp-areas">
+        <a href="#ask"><b>Ask Wikipedia</b><span>Grounded, cited answers from Wikipedia now, as of any date, then-vs-now, or how the answer drifted.</span></a>
+        <a href="#machine"><b>Time machine</b><span>Read any article on any day, watch it rewrite itself, and blame any sentence.</span></a>
+        <a href="#radar"><b>Edit wars</b><span>Every revert in 862,076 versions: where editors disagree, and when.</span></a>
+        <a href="#lens"><b>Language lens</b><span>The same topic in Finnish, Swedish and English Wikipedia, compared.</span></a>
+      </div></div>
+    </section>
+
+    <!-- ================= ASK ================= -->
+    <section class="view" id="view-ask">
+      <h1 class="firstHeading">Ask Wikipedia</h1>
+      <div class="siteSub">Answers from Wikipedia exactly as it stood at the moment on the time bar, and from no other source.</div>
+      <form id="askForm" class="ask"><input id="q" placeholder="Ask anything, e.g. how many died in the 1918 prison camps?" aria-label="Question"><button>Ask</button></form>
+      <div class="chips left" id="examples"></div>
+      <div id="answerArea" class="hidden">
+        <div class="hatnote" id="hatnote"></div>
+        <div class="plan" id="plan"></div>
+        <div class="answer-wrap">
+          <article class="answer mw-body" id="answer"></article>
+        </div>
+        <h2 class="refs-h">References</h2>
+        <ol class="references" id="sources"></ol>
+        <details class="hood"><summary>Under the hood: the SQL behind this answer</summary><div class="trace" id="askTrace"></div></details>
+      </div>
+    </section>
+
+    <!-- ================= TIME MACHINE ================= -->
+    <section class="view" id="view-machine">
+      <div id="machineEmpty">
+        <h1 class="firstHeading">Time machine</h1>
+        <div class="siteSub">Read any article on any day since 2003. Click any sentence to see who wrote it.</div>
+        <div class="picker"><input id="pageQ" autocomplete="off" placeholder="Find an article: Talvisota, Urho Kekkonen, Suomen sisällissota…"><div class="suggest" id="pageResults"></div></div>
+        <div class="chips left" id="pageExamples"></div>
+      </div>
+      <div id="machine" class="hidden">
+        <div class="tabs">
+          <div class="tabs-l"><a class="tab sel" data-mt="read">Article</a><a class="tab" id="tabLens">Language lens</a></div>
+          <div class="tabs-r"><a class="tab sel" data-mt="read">Read</a><a class="tab" data-mt="compare">Compare</a><a class="tab" data-mt="history">View history</a></div>
+        </div>
+        <h1 class="firstHeading" id="mTitle"></h1>
+        <div class="siteSub" id="mSub"></div>
+        <div class="tl-card">
+          <div class="tl-legend"><span><i class="sw sw-bar"></i>edits per month</span><span><i class="sw sw-rv"></i>vandalism reverted</span><span><i class="sw sw-war"></i>edit war</span><span class="hint">click to jump in time</span></div>
+          <svg id="tl"></svg>
+          <div class="duels" id="duels"></div>
+        </div>
+        <div class="cmp-bar hidden" id="cmpBar">Compare the version on the time bar with
+          <input type="date" id="cmpDate" value="2026-10-01" min="2003-01-01" max="2026-10-01">
+          <button class="cdx-btn" data-jump="-1">−1 year</button><button class="cdx-btn" data-jump="0">today</button></div>
+        <div class="reader-grid">
+          <article class="reader mw-body" id="reader"></article>
+          <aside class="rail">
+            <table class="infobox" id="infobox"></table>
+            <div class="blame" id="blame"></div>
+          </aside>
+        </div>
+        <details class="hood"><summary>Under the hood: the SQL behind this page</summary><div class="trace" id="mTrace"></div></details>
+      </div>
+    </section>
+
+    <!-- ================= RADAR ================= -->
+    <section class="view" id="view-radar">
+      <h1 class="firstHeading">Edit wars</h1>
+      <div class="siteSub">Every revert in every version of every article, found by window functions over the system-versioned history.</div>
+      <div class="hatnote">A <b>revert</b> restores an earlier text exactly (same SHA-1). Undoing an anonymous edit is usually <span class="k-v">vandalism cleanup</span>. Named editors undoing each other is an <span class="k-w">edit war</span>.</div>
+      <div class="kpis" id="kpis"></div>
+      <div class="two">
+        <div class="card"><h3>Activity per year</h3><svg id="yearsChart" class="chart"></svg></div>
+        <div class="card"><h3>Edit-war heat: most contested articles × year</h3><div id="heat" class="heat"></div></div>
+      </div>
+      <div class="two">
+        <div class="card"><h3>Most contested articles</h3><table class="wikitable full" id="topTbl"></table></div>
+        <div class="card"><h3>The fiercest edit wars</h3><div id="warsList" class="wars"></div></div>
+      </div>
+      <details class="hood"><summary>Under the hood</summary><div class="trace" id="rTrace"></div></details>
+    </section>
+
+    <!-- ================= LENS ================= -->
+    <section class="view" id="view-lens">
+      <h1 class="firstHeading">Language lens</h1>
+      <div class="siteSub">Finnish, Swedish and English Wikipedia tell the history of Finland differently. Pick a topic to line them up.</div>
+      <div class="picker"><input id="lensQ" autocomplete="off" placeholder="Find a topic: Talvisota, Lapuanliike, Mannerheim…"><div class="suggest" id="lensResults"></div></div>
+      <div class="chips left" id="lensExamples"></div>
+      <div id="lensOut"></div>
+    </section>
+
+    <!-- ================= HOW ================= -->
+    <section class="view" id="view-how">
+      <h1 class="firstHeading">How it works</h1>
+      <div class="siteSub">All of it runs on MariaDB. Gemini only writes the words.</div>
+      <div class="kpis" id="howKpis"></div>
+      <div class="mw-body" id="howBody"></div>
+    </section>
+  </main>
+</div>
+
+<div class="pop hidden" id="pop"></div>
+<footer class="footer">
+  <p>Article text from <a href="https://fi.wikipedia.org" target="_blank" rel="noopener">Wikipedia</a> (Finnish, Swedish, English) under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>; credit to Wikipedia's editors. WikiPilot is an independent project, not affiliated with the Wikimedia Foundation.</p>
+  <p>Datasets: MariaDB Foundation · Built on MariaDB vector search, system-versioned tables and the S3 storage engine · Language by Gemini</p>
+</footer>
+<script src="/static/app.js"></script>
+</body>
+</html>
