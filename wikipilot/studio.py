@@ -176,12 +176,27 @@ def image(prompt, base_b64=None, base_mime="image/jpeg", style=None):
         parts.append({"text": "Edit this image: " + prompt + ". Keep everything else the same."})
     else:
         parts.append({"text": prompt + (f". Style: {STYLES[style]}." if style in STYLES else "")})
-    body = {"contents": [{"role": "user", "parts": parts}], "generationConfig": {"responseModalities": ["TEXT", "IMAGE"]}}
-    r = gemini._post(BASE + IMAGE_MODEL + ":generateContent", body, timeout=240)
-    out_parts = r.json()["candidates"][0]["content"]["parts"]
-    img = next((p["inlineData"] for p in out_parts if "inlineData" in p), None)
-    note = " ".join(p.get("text", "") for p in out_parts if "text" in p and not p.get("thought")).strip()
+    def attempt(ps):
+        body = {"contents": [{"role": "user", "parts": ps}], "generationConfig": {"responseModalities": ["TEXT", "IMAGE"]}}
+        j = gemini._post(BASE + IMAGE_MODEL + ":generateContent", body, timeout=240).json()
+        cand = (j.get("candidates") or [{}])[0]
+        out = (cand.get("content") or {}).get("parts") or []      # empty when the model declines
+        img_ = next((p["inlineData"] for p in out if "inlineData" in p), None)
+        note_ = " ".join(p.get("text", "") for p in out if "text" in p and not p.get("thought")).strip()
+        reason = cand.get("finishReason") or (j.get("promptFeedback") or {}).get("blockReason") or ""
+        return img_, note_, reason
+
+    img, note, reason = attempt(parts)
     if not img:
-        return {"error": note or "The model returned no image. Try rephrasing the prompt."}
+        # History is full of wars: a model may decline a battle scene. Retry once, framed as a calm,
+        # non-graphic educational illustration.
+        soft = [dict(p) for p in parts]
+        soft[-1] = {"text": soft[-1]["text"] + " Make it a calm, non-graphic, educational museum-style illustration: "
+                    "no violence, no injuries, no weapons pointed at anyone."}
+        img, note2, reason = attempt(soft)
+        note = note2 or note
+    if not img:
+        why = f" (the model declined: {reason.lower().replace('_', ' ')})" if reason else ""
+        return {"error": (note or "The image model returned no image") + why + ". Try a different style or a calmer description."}
     return {"image": img["data"], "mime": img.get("mimeType", "image/png"), "note": note,
             "ms": round((time.perf_counter() - t) * 1000), "model": IMAGE_MODEL, "edited": bool(base_b64)}
