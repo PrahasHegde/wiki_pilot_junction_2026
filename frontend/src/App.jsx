@@ -13,10 +13,10 @@ import Lens from "./views/Lens";
 import How from "./views/How";
 
 const TRY = [
-  ["#ask/" + encodeURIComponent("What did Wikipedia say about the 1918 prison camps in 2008, and what has changed since?"), "Prison camps: 2008 vs now"],
-  ["#ask/" + encodeURIComponent("How has Wikipedia's account of who started the Winter War changed over the years?"), "How the Winter War story drifted"],
+  ["#ask/" + encodeURIComponent("What did Wikipedia say about the 1918 prison camps in 2008, and what has changed since?"), "1918 camps: then vs now"],
+  ["#ask/" + encodeURIComponent("How has Wikipedia's account of who started the Winter War changed over the years?"), "Winter War story drift"],
   ["#machine/1256", "Talvisota through time"],
-  ["#lens/1256", "Winter War in 3 languages"],
+  ["#lens/1256", "Compare 3 Wikipedias"],
 ];
 
 export default function App() {

@@ -3,8 +3,22 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Database, ChevronDown } from "lucide-react";
 import { END, START, YEAR_MS, esc, fmtShort, monthTime, nf, utc, xOf } from "../lib";
 
+// The loading mark: WikiPilot's globe turning (meridians sweep like a rotating Earth) while the
+// clock hand runs — "the encyclopedia, moving through time".
+export const Globe = ({ size = 18, className = "" }) => (
+  <svg className={"globe-loader " + className} width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
+    <circle cx="32" cy="32" r="28" className="gl-ring" />
+    <path d="M6 22h52M4 32h56M6 42h52" className="gl-lat" />
+    <ellipse cx="32" cy="32" rx="14" ry="28" className="gl-mer m1" />
+    <ellipse cx="32" cy="32" rx="14" ry="28" className="gl-mer m2" />
+    <ellipse cx="32" cy="32" rx="14" ry="28" className="gl-mer m3" />
+    <path d="M32 32 L32 12" className="gl-hand" />
+    <circle cx="32" cy="32" r="3" className="gl-pin" />
+  </svg>
+);
+
 export const Spinner = ({ label }) => (
-  <div className="loading"><span className="spin" />{label}</div>
+  <div className="loading" role="status"><Globe size={22} />{label}</div>
 );
 
 export const Skeleton = ({ lines = 4, title = false }) => (

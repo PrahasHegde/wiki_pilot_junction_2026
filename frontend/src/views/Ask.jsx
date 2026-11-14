@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ExternalLink, History, Sparkles } from "lucide-react";
 import { useApp } from "../store";
 import { WIKI, fmtDate, fmtShort, isoDay, md } from "../lib";
-import { CitePopover, Hood, Life, Skeleton } from "../components/ui";
+import { CitePopover, Globe, Hood, Life, Skeleton } from "../components/ui";
 import { SearchBox } from "../components/shell";
 
 export const EXAMPLES = [
@@ -77,7 +77,7 @@ export default function Ask() {
           <div className="question"><Sparkles size={16} /> {q}</div>
           {plan && <div className="hatnote">{(HAT[plan.mode] || HAT.now)(plan)}</div>}
           <div className="plan">
-            {phase === "planning" && <span className="step"><span className="spin" />Reading the question for time…</span>}
+            {phase === "planning" && <span className="step"><Globe size={20} />Reading the question for time…</span>}
             {plan && <>
               <span className="pill mode">{(MODES[plan.mode] || MODES.now)(plan)}</span><span>searched for</span>
               <span className="pill">“{plan.search_fi}”</span>{(plan.keywords_fi || []).map((k) => <span className="pill" key={k}>{k}</span>)}
@@ -88,8 +88,8 @@ export default function Ask() {
             {err ? <p className="err">{err}</p>
               : drift ? <Drift d={drift} sources={sources} />
               : text ? <div className={phase === "writing" ? "streaming" : ""} dangerouslySetInnerHTML={{ __html: md(text, sources) }} />
-              : phase === "searching" ? <><div className="step"><span className="spin" />Searching Wikipedia's past…</div><Skeleton lines={5} /></>
-              : phase === "writing" ? <><div className="step"><span className="spin" />Writing an answer from these {sources.length} passages only…</div><Skeleton lines={5} /></>
+              : phase === "searching" ? <><div className="step"><Globe size={20} />Searching Wikipedia's past…</div><Skeleton lines={5} /></>
+              : phase === "writing" ? <><div className="step"><Globe size={20} />Writing an answer from these {sources.length} passages only…</div><Skeleton lines={5} /></>
               : phase === "planning" ? <Skeleton lines={5} /> : null}
           </article>
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Clock, Command, Menu, Moon, Pause, Play, Search, Sun } from "lucide-react";
+import { BookOpen, ChevronRight, Clock, Command, Database, Globe2, History, Home, Info, Languages, Menu, MessageCircleQuestion, Moon, Pause, Play, Scale, Search, Sparkles, Sun, Swords, TrendingUp } from "lucide-react";
 import { useApp } from "../store";
 import { END, START, YEAR_MS, api, fmtDate, fmtShort, looksLikeQuestion, monthTime, nf, utc, xOf } from "../lib";
 
@@ -154,26 +154,50 @@ export function TimeBar({ playFrom }) {
   );
 }
 
-const NAV = [["home", "Main page"], ["ask", "Ask Wikipedia"], ["machine", "Time machine"], ["radar", "Edit wars"], ["lens", "Language lens"], ["how", "How it works"]];
+const NAV = [["home", "Main page", Home], ["ask", "Ask Wikipedia", MessageCircleQuestion], ["machine", "Time machine", History],
+  ["radar", "Edit wars", Swords], ["lens", "Language lens", Languages], ["how", "How it works", Info]];
+const TRY_ICONS = [Scale, TrendingUp, Clock, Globe2];
+
+// Compact figures for the stat tiles: 862,076 -> 862k
+const short = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e4 ? Math.round(n / 1e3) + "k" : nf(n));
 
 export function Sidebar({ stats, open, tryLinks }) {
   const { route } = useApp();
   return (
     <nav className={"sidebar" + (open ? " open" : "")} aria-label="Main menu">
-      <div className="nav-h">Main menu</div>
-      <ul>{NAV.map(([k, label]) => <li key={k}><a href={"#" + k} className={route.view === k ? "cur" : ""}>{label}</a></li>)}</ul>
+      <div className="nav-h">Menu</div>
+      <ul className="nav-main">
+        {NAV.map(([k, label, Icon]) => (
+          <li key={k}><a href={"#" + k} className={route.view === k ? "cur" : ""} aria-current={route.view === k ? "page" : undefined}>
+            <Icon size={17} strokeWidth={route.view === k ? 2.3 : 1.9} /><span>{label}</span>
+          </a></li>
+        ))}
+      </ul>
+
       <div className="nav-h">Try</div>
-      <ul>{tryLinks.map(([href, label]) => <li key={href}><a href={href}>{label}</a></li>)}</ul>
-      {stats && <>
-        <div className="nav-h">In numbers</div>
-        <ul className="nav-stats">
-          <li><b>{nf(stats.versions)}</b> versions</li><li><b>{nf(stats.pages)}</b> articles</li>
-          <li><b>{nf(stats.passage_rows)}</b> passages with vectors</li><li><b>{nf(stats.articles_now)}</b> articles in fi · sv · en</li>
-          <li><b>{nf(stats.s3_tables)}</b> tables in S3</li>
-        </ul>
-      </>}
+      <ul className="nav-try">
+        {tryLinks.map(([href, label], i) => {
+          const Icon = TRY_ICONS[i % TRY_ICONS.length];
+          return <li key={href}><a href={href} title={decodeURIComponent(href.split("/")[1] || label)}><Icon size={14} /><span>{label}</span><ChevronRight size={13} className="go" /></a></li>;
+        })}
+      </ul>
+
+      <div className="nav-h">In numbers</div>
+      <div className="nav-card nav-tiles">
+        {[["versions", stats?.versions], ["articles", stats?.pages], ["passages", stats?.passage_rows],
+          ["fi · sv · en", stats?.articles_now], ["S3 tables", stats?.s3_tables], ["years", 23]].map(([k, v]) => (
+          <div key={k} className="tile" title={stats ? `${nf(v)} ${k}` : undefined}>
+            <b>{stats ? short(+v) : <span className="skel-line" style={{ display: "block", width: 40, height: 14 }} />}</b><span>{k}</span>
+          </div>
+        ))}
+      </div>
+
       <div className="nav-h">Powered by</div>
-      <ul className="nav-stats"><li>MariaDB 12.3 · vector index on system-versioned tables · S3 engine</li><li>Gemini embedding 2 · Gemini 3.8 Flash</li></ul>
+      <div className="nav-card nav-powered">
+        {[[Database, "MariaDB 12.3", "Versioned · vectors · S3"], [Sparkles, "Gemini", "Embedding 2 · 3.8 Flash"], [BookOpen, "Wikipedia", "fi · sv · en · CC BY-SA"]].map(([Icon, n, d]) => (
+          <div key={n} className="pw"><span className="pw-ico"><Icon size={14} /></span><span><b>{n}</b><small>{d}</small></span></div>
+        ))}
+      </div>
     </nav>
   );
 }

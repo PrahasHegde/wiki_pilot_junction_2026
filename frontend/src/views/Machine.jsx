@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ExternalLink, Flame, GitCompare, History, BookOpen, Globe2, Quote, Undo2 } from "lucide-react";
 import { useApp } from "../store";
 import { DIFF, END, START, WIKI, YEAR_MS, api, fmtDate, fmtShort, fmtTime, isoDay, monthTime, nf, splitSentences, utc, wtx, xOf } from "../lib";
-import { Hood, Skeleton, Spark, Spinner, tierLabel } from "../components/ui";
+import { Globe, Hood, Skeleton, Spark, Spinner, tierLabel } from "../components/ui";
 import { SearchBox } from "../components/shell";
 
 const EXAMPLE_TITLES = ["Talvisota", "Suomen sisällissota", "Urho Kekkonen", "Carl Gustaf Emil Mannerheim", "Lapuanliike", "Sanna Marin", "Koronaviruspandemia Suomessa"];
@@ -100,7 +100,7 @@ export default function Machine({ onPlayFrom }) {
       <div className="reader-grid">
         <article className="reader mw-body">
           {mode === "history" ? <HistoryList tl={tl} at={at} onDiff={(a, b) => { setDiffPair([a, b || "2026-10-01"]); go(`machine/${id}/${at ? isoDay(at) : "today"}/compare`); setTimeout(() => setDiffPair([a, b || "2026-10-01"]), 0); }} onRead={(ts) => { setAt(utc(ts) + 1000); setMode("read"); }} />
-            : !view ? <Skeleton lines={14} />
+            : !view ? <><Spinner label={`Travelling to ${at ? fmtDate(at) : "the latest version"}${page && !page.deep ? " (full text from the S3 cold tier)" : ""}…`} /><Skeleton lines={12} /></>
             : view.kind === "diff" ? <DiffView d={view} />
             : <ArticleView v={view} page={page} at={at} picked={picked} onBlame={doBlame} showAge={showAge} setShowAge={setShowAge} ages={ages} setAt={setAt} />}
         </article>
@@ -178,7 +178,7 @@ function ArticleView({ v, page, at, picked, onBlame, showAge, setShowAge, ages, 
       </div>
       <div className="age-bar">
         <button className={"btn" + (showAge ? " primary" : "")} onClick={() => setShowAge(!showAge)}><Flame size={14} /> {showAge ? "Hide" : "Show"} text age</button>
-        {showAge && <span className="age-legend">unchanged for: <i className="a0" />&lt;1 y <i className="a1" />1–3 y <i className="a2" />3–6 y <i className="a3" />6–10 y <i className="a4" />10+ y{!ages && <span className="spin" style={{ marginLeft: 10 }} />}</span>}
+        {showAge && <span className="age-legend">unchanged for: <i className="a0" />&lt;1 y <i className="a1" />1–3 y <i className="a2" />3–6 y <i className="a3" />6–10 y <i className="a4" />10+ y{!ages && <Globe size={16} className="inline-globe" />}</span>}
         {!showAge && <span className="muted">Tip: click any sentence to see who wrote it.</span>}
       </div>
       {!v.blocks.length && <p className="muted">The full text of this article's history is still being archived. Its timeline, infobox and history are complete.</p>}

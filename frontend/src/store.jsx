@@ -35,7 +35,15 @@ export function AppProvider({ children }) {
   };
 
   useEffect(() => {
-    const on = () => setRoute(parseHash());
+    // In-app links can carry a moment (#machine/1256/2008-03-28, #ask/q/2010-01-01): move the time bar.
+    const on = () => {
+      const r = parseHash();
+      setRoute(r);
+      if ((r.view === "machine" || r.view === "ask") && r.b && r.b !== "today") {
+        const t = utc(r.b.length === 7 ? r.b + "-01" : r.b);
+        if (Number.isFinite(t)) setAtRaw(Math.max(START, Math.min(END, t)));
+      }
+    };
     addEventListener("hashchange", on);
     return () => removeEventListener("hashchange", on);
   }, []);

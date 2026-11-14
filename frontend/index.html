@@ -11,7 +11,18 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='28' fill='white' stroke='%23202122' stroke-width='3'/><ellipse cx='32' cy='32' rx='12' ry='28' fill='none' stroke='%23202122' stroke-width='2'/><path d='M4 32h56M9 18h46M9 46h46' stroke='%23202122' stroke-width='2'/><path d='M32 32 L32 14 M32 32 L45 39' stroke='%2336c' stroke-width='4' stroke-linecap='round'/></svg>" />
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <!-- Boot screen until React mounts (styles come from the bundled stylesheet). -->
+    <div class="boot" role="status">
+      <svg class="globe-loader" width="64" height="64" viewBox="0 0 64 64" aria-hidden="true">
+        <circle cx="32" cy="32" r="28" class="gl-ring" /><path d="M6 22h52M4 32h56M6 42h52" class="gl-lat" />
+        <ellipse cx="32" cy="32" rx="14" ry="28" class="gl-mer m1" /><ellipse cx="32" cy="32" rx="14" ry="28" class="gl-mer m2" />
+        <ellipse cx="32" cy="32" rx="14" ry="28" class="gl-mer m3" /><path d="M32 32 L32 12" class="gl-hand" /><circle cx="32" cy="32" r="3" class="gl-pin" />
+      </svg>
+      <div class="boot-name">WikiPilot</div>
+      <div class="boot-sub">Opening Wikipedia's history…</div>
+    </div>
+  </div>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
