@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Component, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Database, ChevronDown } from "lucide-react";
 import { END, START, YEAR_MS, esc, fmtShort, monthTime, nf, utc, xOf } from "../lib";
@@ -136,6 +136,25 @@ export function CitePopover({ sources, eraText }) {
       )}
     </AnimatePresence>
   );
+}
+
+export class ErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  componentDidCatch(error, info) { console.error("WikiPilot view error:", error, info); }
+  componentDidUpdate(prev) { if (prev.resetKey !== this.props.resetKey && this.state.error) this.setState({ error: null }); }
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <div className="crash">
+        <h2>Something went wrong on this page</h2>
+        <p>The rest of WikiPilot still works. Try again, or go back to the main page.</p>
+        <div className="row"><button className="btn primary" onClick={() => this.setState({ error: null })}>Try again</button>
+          <a className="btn" href="#home">Main page</a></div>
+        <details><summary>Details</summary><pre>{String(this.state.error && this.state.error.message)}</pre></details>
+      </div>
+    );
+  }
 }
 
 export const Page = ({ children, k }) => (

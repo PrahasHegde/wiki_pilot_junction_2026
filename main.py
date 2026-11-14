@@ -4,17 +4,15 @@ from datetime import date, datetime
 from decimal import Decimal
 
 import uvicorn
-from fastapi import FastAPI, Body
-from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
+from fastapi import FastAPI, Body, Request
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from wikipilot import ask, history, lens, radar, db, mainpage, studio
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-WEB = os.path.join(ROOT, "web")                        # the classic, framework-free page (/classic)
 DIST = os.path.join(ROOT, "frontend", "dist")          # the React app (npm run build in frontend/)
 app = FastAPI(title="WikiPilot")
-app.mount("/static", StaticFiles(directory=WEB), name="static")
 if os.path.isdir(os.path.join(DIST, "assets")):
     app.mount("/assets", StaticFiles(directory=os.path.join(DIST, "assets")), name="assets")
 
@@ -26,7 +24,7 @@ async def cache_policy(request, call_next):
     p = request.url.path
     if p.startswith("/assets/"):
         resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-    elif p in ("/", "/classic") or p.startswith("/static/"):
+    elif p == "/":
         resp.headers["Cache-Control"] = "no-cache"
     return resp
 
@@ -72,15 +70,24 @@ def J(data, status=200):
     return JSONResponse(json.loads(json.dumps(data, default=_default)), status_code=status)
 
 
+@app.exception_handler(Exception)
+async def any_error(request: Request, exc: Exception):
+    """Every failure is JSON with an `error` field, which every view already displays."""
+    print(f"error on {request.url.path}: {type(exc).__name__}: {exc}", flush=True)
+    text = str(exc)
+    down = any(k in text for k in ("Can't connect", "Lost connection", "server has gone away", "Connection refused"))
+    msg = ("The database is not reachable. Is MariaDB running (docker compose up -d)?" if down
+           else f"{type(exc).__name__}: {text[:300]}")
+    return JSONResponse({"error": msg}, status_code=503 if down else 500)
+
+
 @app.get("/")
 def index():
     react = os.path.join(DIST, "index.html")
-    return FileResponse(react if os.path.exists(react) else os.path.join(WEB, "index.html"))
-
-
-@app.get("/classic")
-def classic():
-    return FileResponse(os.path.join(WEB, "index.html"))
+    if os.path.exists(react):
+        return FileResponse(react)
+    return HTMLResponse("<h1>WikiPilot</h1><p>The frontend is not built yet. Run:</p>"
+                        "<pre>cd frontend\nnpm install\nnpm run build</pre><p>then reload this page.</p>", status_code=503)
 
 
 @app.get("/api/stats")
@@ -215,4 +222,8 @@ def radar_():
 
 
 if __name__ == "__main__":
+    from wikipilot.config import GEMINI_API_KEY
+    if not GEMINI_API_KEY:
+        print("WARNING: no Gemini key in .env (GEMINI_API_KEY=...). Questions, voice, translation and the "
+              "editor studio will not work; time machine, blame and edit wars will.", flush=True)
     uvicorn.run(app, host="127.0.0.1", port=int(os.environ.get("PORT", 8765)))

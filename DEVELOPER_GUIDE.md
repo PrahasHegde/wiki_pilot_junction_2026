@@ -43,6 +43,7 @@ for the demo video.
 
 ```bash
 docker compose up -d --wait          # MariaDB on port 3309
+python scripts/check.py              # health check (add --app once main.py runs)
 python main.py                       # WikiPilot on http://localhost:8765
 ```
 
@@ -76,7 +77,6 @@ npm run dev                          # live-reload dev server on :5173, proxies 
 | `#lens/1256` | Finnish vs Swedish vs English Winter War |
 | `#radar` | Edit wars |
 | `?age=1` | Opens the article with *text age* switched on |
-| `/classic` | The earlier framework-free page (fallback only) |
 
 Handy page ids: **1256** Talvisota · **1150** Suomen sisällissota (Civil War) · **1187** Tarja Halonen ·
 **11477** Lapuanliike · **327** Hanoi Rocks (cold-tier example: its full text is read from S3).
@@ -308,6 +308,9 @@ That is internal only.
 
 | Symptom | Fix |
 |---|---|
+| Not sure what is wrong | `python scripts/check.py` checks database, data, S3 tier, Gemini and frontend; `--app` also calls every API endpoint |
+| "Can't reach the WikiPilot server" banner | Start `python main.py` (and MariaDB), then reload |
+| "The frontend is not built yet" page | `cd frontend && npm install && npm run build` |
 | Port 8000 taken | WikiPilot uses **8765** on purpose |
 | First question slow (6–16 s) | Wait for `warm-up done`; the vector index loads into memory once |
 | C: drive filling up | Docker's disk image only grows: run `scripts/compact_docker_disk.ps1` **as Administrator**; a reboot shrinks the page file |

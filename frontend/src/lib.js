@@ -1,6 +1,13 @@
 // Shared helpers: API, formatting, Wikipedia links, markdown with citations.
 export const api = async (url, opts) => {
-  const r = await fetch(url, opts);
+  let r;
+  try {
+    r = await fetch(url, opts);
+  } catch (e) {                       // network error: the WikiPilot server is not reachable
+    dispatchEvent(new CustomEvent("wp-net", { detail: false }));
+    throw e;
+  }
+  dispatchEvent(new CustomEvent("wp-net", { detail: true }));
   return r.json();
 };
 

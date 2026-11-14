@@ -4,7 +4,7 @@ import { useApp } from "./store";
 import { api } from "./lib";
 import { Footer, Header, Sidebar, TimeBar } from "./components/shell";
 import Palette from "./components/Palette";
-import { Page } from "./components/ui";
+import { ErrorBoundary, Page } from "./components/ui";
 import Home from "./views/Home";
 import Ask from "./views/Ask";
 import Machine from "./views/Machine";
@@ -25,6 +25,12 @@ export default function App() {
   const [nav, setNav] = useState(() => innerWidth > 900);
   const [palette, setPalette] = useState(false);
   const [playFrom, setPlayFrom] = useState(null);
+  const [online, setOnline] = useState(true);
+  useEffect(() => {
+    const on = (e) => setOnline(e.detail);
+    addEventListener("wp-net", on);
+    return () => removeEventListener("wp-net", on);
+  }, []);
 
   useEffect(() => { api("/api/stats").then(setStats).catch(() => {}); }, []);
   useEffect(() => {
@@ -46,6 +52,13 @@ export default function App() {
       <div className={"page" + (nav ? "" : " nav-closed")}>
         <Sidebar stats={stats} open={nav} tryLinks={TRY} />
         <main className="content" id="content">
+          {!online && (
+            <div className="offline" role="alert">
+              <b>Can't reach the WikiPilot server.</b> Check that <code>python main.py</code> and MariaDB
+              (<code>docker compose up -d</code>) are running, then <a onClick={() => location.reload()}>reload</a>.
+            </div>
+          )}
+          <ErrorBoundary resetKey={location.hash}>
           <AnimatePresence mode="wait">
             {v === "ask" ? <Page k="ask"><Ask /></Page>
               : v === "machine" ? <Page k="machine"><Machine onPlayFrom={setPlayFrom} /></Page>
@@ -54,6 +67,7 @@ export default function App() {
               : v === "lens" ? <Page k="lens"><Lens /></Page>
               : <Page k="home"><Home stats={stats} /></Page>}
           </AnimatePresence>
+          </ErrorBoundary>
         </main>
       </div>
       <Footer />

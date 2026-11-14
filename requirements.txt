@@ -3,3 +3,6 @@ fastapi>=0.110
 uvicorn>=0.29
 requests>=2.31
 pyarrow>=15
+
+# Optional, only for recording the demo video (demo/record_demo.py):
+#   pip install playwright && python -m playwright install chromium   (and ffmpeg on PATH)

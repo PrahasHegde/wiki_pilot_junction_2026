@@ -101,7 +101,8 @@ python scripts/analyze.py            # revert/edit-war stats for the radar
 python scripts/archive_s3.py         # full text of every version → MariaDB S3 tables (cold tier)
 
 cd frontend && npm install && npm run build && cd ..   # the React app → frontend/dist
-python main.py                       # http://localhost:8765  (classic page: /classic)
+python scripts/check.py             # health check: database, data, S3 tier, Gemini, frontend
+python main.py                       # http://localhost:8765
 ```
 
 Every loader can be stopped and run again: it resumes where it left off. The long jobs pause
