@@ -1,5 +1,8 @@
 # WikiPilot — Wikipedia, read through time
 
+<img width="1861" height="1047" alt="image" src="https://github.com/user-attachments/assets/56fa68f6-4b1a-4f5f-8a25-f32d36e7cb42" />
+
+
 Every Wikipedia article has been rewritten hundreds or thousands of times, and every earlier version
 is still kept. Readers almost never see them. **WikiPilot** lets you fly through that history. Ask
 Wikipedia a question *as it stood on any day since 2003*, see how the answer drifted, watch an
